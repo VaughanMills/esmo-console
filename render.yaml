@@ -1,0 +1,13 @@
+# Render Blueprint — deploys EMSO Console as a free static site.
+# Usage: in the Render dashboard choose  New +  →  Blueprint  →  connect this repo.
+# Render will read this file and create the service automatically.
+services:
+  - type: web
+    name: emso-console
+    runtime: static
+    buildCommand: ""
+    staticPublishPath: .
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache

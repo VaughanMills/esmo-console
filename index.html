@@ -1,0 +1,1456 @@
+<title>EMSO Console — Spectrum Operations Sandbox</title>
+<style>
+  :root{
+    --bg:#05080C; --panel:#0A1016; --panel2:#0D141C; --line:#16222E; --line2:#1E2C3A;
+    --ink:#D7E4EC; --dim:#6C8090; --faint:#3A4C5A;
+    --cyan:#48D8F0; --cyan-soft:rgba(72,216,240,.12);
+    --amber:#FFB84D; --red:#FF5C4A; --green:#57D98B; --yellow:#FFD24D;
+    --mono:"Consolas","Cascadia Mono","SF Mono",ui-monospace,Menlo,monospace;
+    --sans:"Segoe UI",system-ui,-apple-system,sans-serif;
+  }
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:var(--mono);overflow:hidden}
+  *{box-sizing:border-box}
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+  button:focus-visible{outline:1px solid var(--cyan);outline-offset:2px}
+
+  .page{height:100vh;display:flex;flex-direction:column}
+
+  header{display:flex;align-items:center;gap:16px;padding:0 16px;height:52px;flex:none;
+    border-bottom:1px solid var(--line);background:linear-gradient(180deg,#0B121A, #070C11)}
+  .brand{display:flex;align-items:baseline;gap:10px;white-space:nowrap}
+  .brand .mark{color:var(--cyan);font-size:15px}
+  .brand h1{font-size:14px;font-weight:600;letter-spacing:.22em;margin:0}
+  .brand .sub{font-size:10px;letter-spacing:.16em;color:var(--dim)}
+  header .spacer{flex:1}
+  .chip{font-size:10px;letter-spacing:.13em;padding:3px 8px;border:1px solid var(--line2);color:var(--dim);white-space:nowrap}
+  .chip.ok{color:var(--green);border-color:rgba(87,217,139,.35)}
+  .chip.zulu{color:var(--ink);font-variant-numeric:tabular-nums}
+
+  .mid{flex:1;display:flex;min-height:0}
+  .rail{width:252px;flex:none;overflow-y:auto;background:var(--panel);border-right:1px solid var(--line);
+    scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+  .rail.right{width:306px;border-right:none;border-left:1px solid var(--line)}
+  .rail::-webkit-scrollbar{width:6px}
+  .rail::-webkit-scrollbar-thumb{background:var(--line2)}
+
+  .sec{padding:11px 14px;border-bottom:1px solid var(--line)}
+  .sec h2{margin:0 0 9px;font-size:9.5px;font-weight:600;letter-spacing:.22em;color:var(--dim);display:flex;justify-content:space-between}
+  .sec h2 .tick{color:var(--cyan)}
+  .sec h2 .rtick{color:var(--red)}
+  .sec h2 .hint{color:var(--faint);letter-spacing:.08em;font-weight:400}
+
+  .plat{display:flex;flex-direction:column;gap:6px}
+  .plat button{display:flex;flex-direction:column;gap:2px;text-align:left;padding:7px 10px;
+    border:1px solid var(--line2);background:var(--panel2)}
+  .plat button .nm{font-size:12px;letter-spacing:.1em}
+  .plat button .rl{font-size:9.5px;letter-spacing:.06em;color:var(--dim)}
+  .plat button.on{border-color:var(--cyan);background:var(--cyan-soft)}
+  .plat button.on .nm{color:var(--cyan)}
+
+  .scen{display:flex;flex-direction:column;gap:5px}
+  .scen button{text-align:left;padding:7px 10px;border:1px solid var(--line2);background:var(--panel2);
+    font-size:11px;letter-spacing:.08em;color:var(--ink)}
+  .scen button small{display:block;font-size:9px;color:var(--dim);letter-spacing:.04em;margin-top:2px;white-space:normal;line-height:1.4}
+  .scen button.on{border-color:var(--yellow);background:rgba(255,210,77,.08)}
+  .scen button.on{color:var(--yellow)}
+  .scen button.on small{color:rgba(255,210,77,.6)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chips button{padding:5px 0;border:1px solid var(--line2);background:var(--panel2);
+    font-size:10.5px;letter-spacing:.07em;color:var(--dim);flex:1;min-width:34px;text-align:center}
+  .chips button small{display:block;font-size:8.5px;color:var(--faint);letter-spacing:.03em;margin-top:1px}
+  .chips button.on{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-soft)}
+  .chips button.on small{color:rgba(72,216,240,.6)}
+  .chips button:disabled{opacity:.35;cursor:default}
+  .chips.stack button{flex:1 1 100%;text-align:left;padding:5px 9px}
+
+  .tgl{display:flex;align-items:center;justify-content:space-between;width:100%;padding:5px 0;gap:8px}
+  .tgl .lb{font-size:10.5px;letter-spacing:.09em;color:var(--ink);text-align:left}
+  .tgl .lb small{display:block;color:var(--faint);font-size:9px;letter-spacing:.04em}
+  .tgl .sw{flex:none;width:26px;height:14px;border:1px solid var(--line2);position:relative;background:var(--panel2)}
+  .tgl .sw::after{content:"";position:absolute;top:2px;left:2px;width:9px;height:8px;background:var(--faint);transition:left .12s,background .12s}
+  .tgl.on .sw{border-color:var(--cyan)} .tgl.on .sw::after{left:13px;background:var(--cyan)}
+  .tgl.amb.on .sw{border-color:var(--amber)} .tgl.amb.on .sw::after{background:var(--amber)}
+  .tgl.red.on .sw{border-color:var(--red)} .tgl.red.on .sw::after{background:var(--red)}
+  .tgl.grn.on .sw{border-color:var(--green)} .tgl.grn.on .sw::after{background:var(--green)}
+
+  .hintline{font-size:9.5px;color:var(--faint);letter-spacing:.05em;line-height:1.5;padding:10px 14px}
+
+  .stage{flex:1;position:relative;min-width:0;background:radial-gradient(120% 90% at 50% 40%, #081018 0%, #05080C 70%)}
+  .stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .stage .fx{position:absolute;inset:0;pointer-events:none;opacity:.05;
+    background:repeating-linear-gradient(0deg,transparent 0 2px,#9fd8e8 2px 3px)}
+  .corner{position:absolute;width:14px;height:14px;pointer-events:none;border:0 solid rgba(72,216,240,.5)}
+  .corner.tl{top:8px;left:8px;border-top-width:1px;border-left-width:1px}
+  .corner.tr{top:8px;right:8px;border-top-width:1px;border-right-width:1px}
+  .corner.bl{bottom:8px;left:8px;border-bottom-width:1px;border-left-width:1px}
+  .corner.br{bottom:8px;right:8px;border-bottom-width:1px;border-right-width:1px}
+  .objective{position:absolute;top:12px;left:16px;max-width:340px;padding:8px 12px;border:1px solid var(--line2);
+    border-left:2px solid var(--yellow);background:rgba(10,16,22,.9);z-index:4}
+  .objective .oh{font-size:9px;letter-spacing:.2em;color:var(--yellow);margin-bottom:4px}
+  .objective .ob{font-size:10.5px;letter-spacing:.03em;color:var(--dim);line-height:1.5}
+  .objective .os{font-size:10px;letter-spacing:.06em;margin-top:5px;font-weight:600}
+  .onboard{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);max-width:600px;
+    display:flex;gap:12px;align-items:center;padding:8px 12px;border:1px solid var(--line2);
+    background:rgba(10,16,22,.9);font-size:10.5px;letter-spacing:.04em;color:var(--dim);line-height:1.5;z-index:4}
+  .onboard b{color:var(--cyan);font-weight:600}
+  .onboard button{color:var(--faint);font-size:12px;padding:2px 4px}
+  .onboard.gone{display:none}
+
+  .viewbar{position:absolute;top:8px;right:26px;display:flex;gap:4px;z-index:5;flex-wrap:wrap;justify-content:flex-end;max-width:60%}
+  .viewbar button{font-size:8.5px;letter-spacing:.1em;padding:3px 7px;border:1px solid var(--line2);
+    background:rgba(10,16,22,.85);color:var(--dim)}
+  .viewbar button.on{border-color:var(--cyan);color:var(--cyan)}
+  .viewbar button.hid{display:none}
+
+  .log{list-style:none;margin:0;padding:0;font-size:9.5px;line-height:1.7;letter-spacing:.02em;min-height:100px}
+  .log .t{color:var(--faint);margin-right:6px;font-variant-numeric:tabular-nums}
+  .log li{color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .log li.hot{color:var(--ink)}
+  .log li.warn{color:var(--yellow)} .log li.bad{color:var(--red)} .log li.net{color:var(--amber)} .log li.good{color:var(--green)}
+
+  .ro{display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-size:10.5px}
+  .ro dt{color:var(--dim);letter-spacing:.07em;font-size:9.5px;align-self:baseline;padding-top:1px}
+  .ro dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+  .ro dd.cy{color:var(--cyan)} .ro dd.am{color:var(--amber)} .ro dd.rd{color:var(--red)} .ro dd.gr{color:var(--green)}
+  dl{margin:0}
+
+  /* ELINT threat list */
+  .threats{display:flex;flex-direction:column;gap:7px;min-height:40px}
+  .thr{border:1px solid var(--line2);background:var(--panel2);padding:6px 8px;cursor:pointer}
+  .thr.sel{border-color:var(--yellow)}
+  .thr .tr1{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+  .thr .nm{font-size:11px;letter-spacing:.05em;color:var(--ink)}
+  .thr .nm .q{color:var(--faint);font-size:9px}
+  .thr .pct{font-size:11px;font-variant-numeric:tabular-nums}
+  .thr .bar{height:3px;background:#101820;margin:5px 0 4px;position:relative;overflow:hidden}
+  .thr .bar i{position:absolute;left:0;top:0;bottom:0;display:block}
+  .thr .sigs{display:flex;flex-wrap:wrap;gap:3px}
+  .thr .sig{font-size:8px;letter-spacing:.04em;padding:1px 4px;border:1px solid var(--line2);color:var(--dim)}
+  .thr .sig.dl{border-color:rgba(255,184,77,.4);color:var(--amber)}
+  .thr .alt{font-size:8.5px;color:var(--faint);letter-spacing:.03em;margin-top:3px}
+  .conf-hi{color:var(--red)} .conf-md{color:var(--yellow)} .conf-lo{color:var(--dim)}
+  .bar .b-hi{background:var(--red)} .bar .b-md{background:var(--yellow)} .bar .b-lo{background:var(--dim)}
+
+  .analysis{font-family:var(--sans);font-size:12px;line-height:1.6;color:#A9BCC9}
+  .analysis p{margin:0 0 9px} .analysis p:last-child{margin-bottom:0}
+  .analysis em{font-style:normal;color:var(--cyan)}
+  .analysis .am{font-style:normal;color:var(--amber)}
+  .analysis .rd{font-style:normal;color:var(--red)}
+
+  .trksel{font-size:10px;letter-spacing:.05em;color:var(--dim);line-height:1.7;min-height:26px}
+  .trksel b{color:var(--yellow);font-weight:600}
+
+  footer{flex:none;height:104px;border-top:1px solid var(--line);background:var(--panel);position:relative}
+  footer canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+  footer .cap{position:absolute;top:6px;left:14px;font-size:9px;letter-spacing:.22em;color:var(--dim);pointer-events:none}
+  footer .cap .tick{color:var(--cyan)}
+  #specTip{position:absolute;bottom:100%;margin-bottom:6px;left:0;transform:translateX(-50%);
+    padding:3px 8px;border:1px solid var(--line2);background:#0A1016;font-size:9.5px;letter-spacing:.06em;
+    color:var(--cyan);white-space:nowrap;pointer-events:none;display:none;z-index:9}
+
+  @media (max-width:980px){
+    html,body{overflow:auto}
+    .page{height:auto;min-height:100vh}
+    .mid{flex-direction:column}
+    .stage{height:58vh;flex:none}
+    .rail,.rail.right{width:100%;border:none;border-top:1px solid var(--line);max-height:none;overflow:visible}
+    footer{height:96px}
+  }
+  @media (prefers-reduced-motion:reduce){ .stage .fx{display:none} }
+</style>
+
+<div class="page">
+  <header>
+    <div class="brand">
+      <span class="mark">▮▯</span>
+      <h1>EMSO CONSOLE</h1>
+      <span class="sub">WESTPAC · ELECTROMAGNETIC SPECTRUM OPERATIONS · TRAINING SANDBOX</span>
+    </div>
+    <div class="spacer"></div>
+    <span class="chip" id="chipPkg">PKG —</span>
+    <span class="chip" id="chipNet">NET —</span>
+    <span class="chip" id="chipRed">RED C2 —</span>
+    <span class="chip ok">UNCLASS // SIM</span>
+    <span class="chip zulu" id="zulu">--:--:--Z</span>
+  </header>
+
+  <div class="mid">
+    <aside class="rail left">
+      <div class="sec">
+        <h2><span class="tick">▸</span> SCENARIO</h2>
+        <div class="scen" id="scenGrp"></div>
+      </div>
+      <div class="sec">
+        <h2><span class="tick">▸</span> CONTROLLED SENSOR</h2>
+        <div class="plat" id="platGrp"></div>
+      </div>
+      <div class="sec">
+        <h2><span class="tick">▸</span> RADAR BAND</h2>
+        <div class="chips" id="bandGrp"></div>
+      </div>
+      <div class="sec">
+        <h2><span class="tick">▸</span> WAVEFORM</h2>
+        <div class="chips stack" id="wfGrp"></div>
+      </div>
+      <div class="sec">
+        <h2><span class="tick">▸</span> PRF <span class="hint" id="prfHint"></span></h2>
+        <div class="chips" id="prfGrp"></div>
+      </div>
+      <div class="sec">
+        <h2><span class="tick">▸</span> SCAN MODE</h2>
+        <div class="chips" id="scanGrp"></div>
+      </div>
+      <div class="sec">
+        <h2><span class="tick">▸</span> BLUE SATCOM · WGS-11</h2>
+        <div class="chips" id="satGrp"></div>
+      </div>
+      <div class="sec">
+        <h2><span class="rtick">▸</span> RED FORCE EMISSIONS</h2>
+        <button class="tgl red on" id="tglRedRad"><span class="lb">RED RADARS RADIATING<small>EMCON off — ESM can classify</small></span><span class="sw"></span></button>
+        <button class="tgl red on" id="tglRedTdl"><span class="lb">RED TAC DATALINK<small>KJ-2000 passes targeting</small></span><span class="sw"></span></button>
+        <button class="tgl red on" id="tglRedSat"><span class="lb">RED SATCOM (C2)<small>strategic reachback</small></span><span class="sw"></span></button>
+        <button class="tgl red on" id="tglRedSam"><span class="lb">HQ-9 SAM ACTIVE<small>search + engage radar</small></span><span class="sw"></span></button>
+      </div>
+      <div class="sec">
+        <h2><span class="tick">▸</span> BLUE EW / ATTACK</h2>
+        <button class="tgl grn" id="tglGrowlerTdl"><span class="lb">GROWLER: JAM RED TDL<small>deny targeting handoff</small></span><span class="sw"></span></button>
+        <button class="tgl grn" id="tglGrowlerRad"><span class="lb">GROWLER: JAM RED RADAR<small>noise vs SAM/AWACS</small></span><span class="sw"></span></button>
+        <button class="tgl grn" id="tglGndJam"><span class="lb">GND JAMMER: RED SATCOM<small>uplink jam in footprint</small></span><span class="sw"></span></button>
+        <div class="chips" id="jamBandGrp" style="margin-top:7px"></div>
+      </div>
+      <div class="sec">
+        <h2><span class="rtick">▸</span> RED EW / ATTACK</h2>
+        <button class="tgl red" id="tglEaRadar"><span class="lb">RED: JAM BLUE RADAR<small>standoff noise jammer</small></span><span class="sw"></span></button>
+        <button class="tgl red" id="tglEaL16"><span class="lb">RED: JAM LINK 16<small>ground EW vs 960–1215 MHz</small></span><span class="sw"></span></button>
+        <button class="tgl red" id="tglEaSat"><span class="lb">RED: JAM BLUE SATCOM<small>uplink jammer in footprint</small></span><span class="sw"></span></button>
+      </div>
+      <div class="sec">
+        <h2><span class="tick">▸</span> NETWORK / SIM</h2>
+        <button class="tgl amb on" id="tglLink"><span class="lb">BLUE LINK 16<small>TDMA datalink</small></span><span class="sw"></span></button>
+        <button class="tgl on" id="tglTruth"><span class="lb">TRUTH OVERLAY<small>ghost actual positions</small></span><span class="sw"></span></button>
+        <button class="tgl" id="tglPause"><span class="lb">FREEZE SIM<small>pause all motion</small></span><span class="sw"></span></button>
+      </div>
+      <p class="hintline">SCROLL ZOOM · DRAG PAN · DOUBLE-CLICK A UNIT TO INSPECT. CLICK A TRACK TO DESIGNATE, THEN STT TO LOCK.</p>
+    </aside>
+
+    <main class="stage">
+      <canvas id="map"></canvas>
+      <div class="fx"></div>
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+      <div class="viewbar" id="viewbar"></div>
+      <div class="objective" id="objective"></div>
+      <div class="onboard" id="onboard">
+        <span id="onboardTxt"></span>
+        <button id="onboardX" aria-label="dismiss">✕</button>
+      </div>
+    </main>
+
+    <aside class="rail right">
+      <div class="sec">
+        <h2><span class="rtick">▸</span> ELINT — THREAT ID <span class="hint">ESM FUSION</span></h2>
+        <div class="threats" id="threats"></div>
+      </div>
+      <div class="sec">
+        <h2><span class="tick">▸</span> EVENT LOG</h2>
+        <ul class="log" id="log"></ul>
+      </div>
+      <div class="sec">
+        <h2><span class="tick">▸</span> EMITTER DATA</h2>
+        <dl class="ro" id="readouts"></dl>
+      </div>
+      <div class="sec">
+        <h2><span class="tick">▸</span> COMMS STATUS</h2>
+        <dl class="ro" id="comms"></dl>
+      </div>
+      <div class="sec">
+        <h2><span class="tick">▸</span> DESIGNATED TRACK</h2>
+        <div class="trksel" id="trksel">NONE — click a track symbol on the scope.</div>
+      </div>
+      <div class="sec">
+        <h2><span class="tick">▸</span> SIGNAL ANALYSIS</h2>
+        <div class="analysis" id="analysis"></div>
+      </div>
+    </aside>
+  </div>
+
+  <footer>
+    <canvas id="spec"></canvas>
+    <span class="cap"><span class="tick">▸</span> EM SPECTRUM · LOG SCALE · CLICK A RADAR BAND TO RETUNE</span>
+    <div id="specTip"></div>
+  </footer>
+</div>
+
+<script>
+'use strict';
+/* ═══════ helpers ═══════ */
+const $=s=>document.querySelector(s);
+const TAU=Math.PI*2;
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const angN=a=>{a=(a+Math.PI)%TAU; if(a<0)a+=TAU; return a-Math.PI;};
+const gauss=()=> (Math.random()+Math.random()+Math.random()-1.5)/1.1;
+const dist=(ax,ay,bx,by)=>Math.hypot(bx-ax,by-ay);
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let FAM='Consolas,monospace';
+
+const C={cyan:'#48D8F0',amber:'#FFB84D',red:'#FF5C4A',green:'#57D98B',yellow:'#FFD24D',
+  ink:'#D7E4EC',dim:'#6C8090',faint:'#3A4C5A'};
+const cy=a=>`rgba(72,216,240,${a})`, am=a=>`rgba(255,184,77,${a})`,
+      rd=a=>`rgba(255,92,74,${a})`,  gn=a=>`rgba(87,217,139,${a})`,
+      yl=a=>`rgba(255,210,77,${a})`, wt=a=>`rgba(215,228,236,${a})`;
+
+/* ═══════ config ═══════ */
+const WORLD={w:440,h:280};
+const TSCALE=26;
+
+const BANDS=[
+ {id:'L', f:1.4, f0:1,  f1:2,  lab:'1–2 GHz',  rng:1.00, res:3.0,
+  blurb:'<em>L-band</em> — ~20&thinsp;cm waves travel far and shrug off weather, so it owns early warning. The price: a wide beam, so bearing is coarse and uncertainty ellipses balloon at range.'},
+ {id:'S', f:3.0, f0:2,  f1:4,  lab:'2–4 GHz',  rng:0.85, res:2.2,
+  blurb:'<em>S-band</em> — the surveillance workhorse; the E-3 rotodome and SPY-1 arrays live here. Balanced reach, weather tolerance and beam sharpness.'},
+ {id:'C', f:5.6, f0:4,  f1:8,  lab:'4–8 GHz',  rng:0.70, res:1.6,
+  blurb:'<em>C-band</em> — a middle path used by many SAM search sets. Sharper than S, but rain begins to bite into range.'},
+ {id:'X', f:10,  f0:8,  f1:12, lab:'8–12 GHz', rng:0.55, res:1.0,
+  blurb:'<em>X-band</em> — 3&thinsp;cm pencil beams and fine range cells. Fire-control territory: fighter radars, seekers, SAM engagement. Reach drops, weather eats it.'},
+ {id:'Ku',f:16,  f0:12, f1:18, lab:'12–18 GHz',rng:0.42, res:0.7,
+  blurb:'<em>Ku-band</em> — even finer resolution for mapping and terminal seekers; atmospheric absorption keeps it short-legged.'}];
+
+const WFS=[
+ {id:'PULSE',nm:'PULSED',sub:'range by time-of-flight',
+  blurb:'<em>Pulsed:</em> the radar shouts, then listens. Round-trip time gives range directly; between pulses the receiver is silent. Watch the wavefronts march out.'},
+ {id:'CW',nm:'CONTINUOUS WAVE',sub:'doppler only — no range',
+  blurb:'<em>Continuous wave:</em> the transmitter never stops, so there is no time-of-flight — <em>range is unknown</em>. What you get is a clean Doppler shift: precise closing velocity. This is how missile illuminators work.'},
+ {id:'PD',nm:'PULSE-DOPPLER',sub:'range + velocity, clutter reject',
+  blurb:'<em>Pulse-Doppler:</em> coherent bursts processed for frequency shift — range <em>and</em> velocity, plus clutter rejection. How a fighter looks down at a low flyer without drowning in ground echoes.'}];
+
+const PRFS=[
+ {id:'LOW', khz:1.2, vis:0.55, blurb:'Low PRF listens a long time between pulses — far echoes come home unambiguously.'},
+ {id:'MED', khz:4.0, vis:0.30, blurb:'Medium PRF trades range clarity for Doppler coverage.'},
+ {id:'HIGH',khz:12,  vis:0.15, blurb:'High PRF fires again before distant echoes return — great Doppler, but ambiguous range.'}];
+
+const SCANS=[
+ {id:'SEARCH',nm:'SEARCH',sub:'raw plots, phosphor fade',
+  blurb:'<em>Search (RWS):</em> the beam marches and every contact is repainted once per scan — raw blips that fade. Nothing is tracked yet, nothing to share.'},
+ {id:'TWS',nm:'TRACK-WHILE-SCAN',sub:'auto-correlate plots → tracks',
+  blurb:'<em>Track-while-scan:</em> the antenna never stops, but software files each plot against known tracks. You keep the whole picture while every track stays warm.'},
+ {id:'STT',nm:'SINGLE TARGET TRACK',sub:'beam parked on one track',
+  blurb:'<em>Single-target track:</em> the beam parks on one contact for weapon-quality updates — and everything else goes stale. The tradeoff a fire-control lock always makes.'}];
+
+const PLATFORMS=[
+ {id:'awacs',nm:'SENTRY 01',rl:'E-3 AEW&C · 360° rotodome',baseRng:240,baseBeam:7, scanT:5.5,kind:'awacs'},
+ {id:'fighter',nm:'VIPER 11',rl:'F-16 · nose array, ±55° sector',baseRng:115,baseBeam:12,scanT:2.6,kind:'fighter'},
+ {id:'ship',nm:'DDG 112',rl:'Aegis · 4× SPY fixed arrays',baseRng:175,baseBeam:8,scanT:3.2,kind:'ship'}];
+
+const SATBANDS=[
+ {id:'UHF',f:0.28,lab:'240–320 MHz',rate:'16 kbps',rx:280,ry:190,
+  blurb:'<span class="am">UHF SATCOM</span> (240–320&thinsp;MHz): penetrates weather with cheap near-omni antennas, but the footprint is a whole hemisphere, the pipe is kilobits, and any jammer inside that footprint can shout over you.'},
+ {id:'X',f:7.6,lab:'7–8 GHz',rate:'8 Mbps',rx:200,ry:135,
+  blurb:'<span class="am">X-band SATCOM</span> (WGS, 7–8&thinsp;GHz): directional dishes, megabit rates, a tighter regional footprint and real jam resistance — the military workhorse.'},
+ {id:'Ka',f:30,lab:'20–31 GHz',rate:'274 Mbps',rx:55,ry:40,spot:true,
+  blurb:'<span class="am">Ka-band spot beam</span> (20–31&thinsp;GHz): huge bandwidth through a narrow steerable footprint. A jammer outside the spot simply isn’t heard — the geometry itself is the countermeasure. Cost: rain fade and precise pointing.'}];
+
+/* ── emitter fingerprint library (blue ESM knows these) ── */
+const SIGLIB={
+ 'EWR-L': {nm:'YLC-8B EWR',      band:'L',  kind:'EW SEARCH',  hosts:['EWR']},
+ 'AEW-L': {nm:'KJ-2000 AEW',     band:'L',  kind:'AEW RADAR',  hosts:['KJ-2000']},
+ 'AI-S':  {nm:'fighter search',  band:'S',  kind:'AI SEARCH',  hosts:['J-16','J-11','J-10']},
+ 'FC-X':  {nm:'AESA fire-ctrl',  band:'X',  kind:'FIRE CTRL',  hosts:['J-16']},
+ 'SAM-SR':{nm:'HT-233 search',   band:'C',  kind:'SAM SEARCH', hosts:['HQ-9']},
+ 'SAM-EN':{nm:'HT-233 engage',   band:'X',  kind:'SAM ENGAGE', hosts:['HQ-9']},
+ 'HF-S':  {nm:'JY-11 height',    band:'S',  kind:'HEIGHT FIND',hosts:['HF-334','HQ-9']},
+ 'NAV-S': {nm:'Type-346 search', band:'S',  kind:'NAVAL SEARCH',hosts:['Type-052D','Type-054A']},
+ 'NAV-X': {nm:'naval fire-ctrl', band:'X',  kind:'NAVAL FC',   hosts:['Type-052D']},
+ 'TDL':   {nm:'tac datalink',    band:'UHF',kind:'DATALINK',   hosts:['KJ-2000','J-16','J-11','J-10','HQ-9','Type-052D'],dl:true},
+ 'IFF-R': {nm:'IFF transponder', band:'L',  kind:'IFF',        hosts:['KJ-2000','J-16','J-11','J-10']},
+ 'ATC':   {nm:'civil transponder',band:'L', kind:'ATC/MODE-S', hosts:['AIRLINER']}};
+
+/* GEO satellites (not to scale) */
+const SATS={ blue:{x:44,y:20,nm:'WGS-11 · GEO 175E'}, red:{x:410,y:20,nm:'RED GEO · 152E'} };
+
+/* Pacific dressing */
+const ISLANDS=[
+ {nm:'RED MAINLAND',lx:410,ly:150,pts:[[392,40],[431,52],[434,120],[425,176],[431,236],[404,255],[398,200],[406,150],[392,96]]},
+ {nm:'SENKAKU LINE',lx:250,ly:78,pts:[[244,74],[256,70],[260,82],[248,86]]},
+ {nm:'FWD ISLAND',lx:196,ly:96,pts:[[188,86],[202,82],[206,96],[192,100]]},
+ {nm:'BLUE ATOLL',lx:44,ly:212,pts:[[36,196],[54,190],[62,204],[46,214]]}];
+
+/* ═══════ state ═══════ */
+const st={
+  scenario:'isr',
+  plat:'awacs', band:'S', wf:'PULSE', prf:'MED', scan:'TWS', satBand:'X', jamBand:'X',
+  link:true, truth:true, paused:false,
+  redRad:true, redTdl:true, redSat:true, redSam:true,
+  growlerTdl:false, growlerRad:false, gndJam:false,
+  eaRadar:false, eaL16:false, eaSat:false,
+  beamA:0, beamHist:[], pulses:[], plots:[], tracks:[], packets:[], specks:[], iffs:[],
+  desig:null, selThreat:null, trkSeq:4020, simT:0, lastPulse:0, lastIdle:0, lastIffAmb:0,
+  jamHoldUntil:-1, msgCount:0, netPulse:0, prevMode:'L16', satNullLog:false,
+  dwellNext:0, dwellIdx:0, rasterAz:0, redPulse:0,
+  engaged:false, pkgState:'—', prevPkg:'—', missiles:[]
+};
+const cam={x:220,y:140,z:1,rot:0,follow:null,hdgUp:false};
+const camT={x:220,y:140,z:1};
+const band=()=>BANDS.find(b=>b.id===st.band);
+const wf=()=>WFS.find(w=>w.id===st.wf);
+const prf=()=>PRFS.find(p=>p.id===st.prf);
+const plat=()=>PLATFORMS.find(p=>p.id===st.plat);
+const satband=()=>SATBANDS.find(s=>s.id===st.satBand);
+const maxRange=()=>plat().baseRng*band().rng;
+const beamDeg=()=>Math.max(1.4, plat().baseBeam*1.5/band().f * (plat().id==='fighter'?1.15:1));
+const beamHalf=()=>beamDeg()/2*Math.PI/180;
+
+/* footprints */
+const blueFoot=()=>{const sb=SATBANDS.find(s=>s.id===st.satBand);
+  return sb.spot?{cx:120,cy:150,rx:sb.rx,ry:sb.ry}:{cx:150,cy:140,rx:sb.rx,ry:sb.ry};};
+const redFoot={cx:300,cy:150,rx:230,ry:150};
+const inEll=(x,y,e)=>((x-e.cx)/e.rx)**2+((y-e.cy)/e.ry)**2<=1;
+
+/* comms modes */
+const blueSatDenied=()=>st.eaSat&&inEll(SITES.eaSat.x,SITES.eaSat.y,blueFoot());
+const blueMode=()=>{ if(st.link&&!st.eaL16)return 'L16';
+  if(!blueSatDenied())return 'SATCOM'; return 'DARK'; };
+const redTdlUp=()=>st.redTdl&&!st.growlerTdl;
+const redSatUp=()=>st.redSat&&!(st.gndJam&&inEll(F.gndjam.x,F.gndjam.y,redFoot));
+
+/* ═══════ entities ═══════ */
+// blue force
+const F={
+ awacs:{x:0,y:0,h:0,kind:'awacs',nm:'SENTRY 01',orbit:{cx:88,cy:118,r:24}},
+ fighter:{x:0,y:0,h:0,kind:'fighter',nm:'VIPER 11',orbit:{cx:172,cy:184,r:26}},
+ ship:{x:72,y:206,h:-0.4,kind:'ship',nm:'DDG 112'},
+ growler:{x:0,y:0,h:0,kind:'growler',nm:'GROWLER 05',orbit:{cx:150,cy:150,r:14}},
+ gndjam:{x:196,y:92,h:0,kind:'gndjam',nm:'CROW EA-1'},
+ strike1:{x:120,y:150,h:0,kind:'strike',nm:'STRIKE 21',route:0,active:false},
+ strike2:{x:120,y:163,h:0,kind:'strike',nm:'STRIKE 22',route:0,active:false}
+};
+F.awacs.orbit.om=(350/3600*TSCALE)/F.awacs.orbit.r;
+F.fighter.orbit.om=(430/3600*TSCALE)/F.fighter.orbit.r;
+F.growler.orbit.om=(400/3600*TSCALE)/F.growler.orbit.r;
+const NETIDS=['awacs','fighter','ship'];
+const BLUE_INSPECT=['awacs','fighter','ship','growler','gndjam'];
+
+// red jammer ground sites (their EW vs blue)
+const SITES={ eaL16:{x:322,y:150,nm:'RED EW SITE'}, eaSat:{x:300,y:118,nm:'RED UPLINK JAM'} };
+
+// red order of battle
+function mkRed(o){return Object.assign({det:{},seen:{},lastPaint:-9,firm:false,engaging:false},o);}
+const reds=[
+ mkRed({id:'KJ',platType:'KJ-2000',kind:'air',nm:'AEW',emits:['AEW-L','TDL','IFF-R'],
+   orbit:{cx:388,cy:92,r:18},kt:380}),
+ mkRed({id:'J16A',platType:'J-16',kind:'air',emits:['AI-S','FC-X','TDL','IFF-R'],
+   x:334,y:132,kt:520,hdgTo:[-1,.05]}),
+ mkRed({id:'J11',platType:'J-11',kind:'air',emits:['AI-S','TDL','IFF-R'],
+   x:352,y:176,kt:500,hdgTo:[-1,-.06]}),
+ mkRed({id:'J16B',platType:'J-16',kind:'air',emits:['AI-S','TDL','IFF-R'],
+   x:372,y:210,kt:540,hdgTo:[-1,-.1]}),
+ mkRed({id:'DDG',platType:'Type-052D',kind:'naval',nm:'RED CG',emits:['NAV-S','NAV-X','TDL'],
+   x:360,y:232,kt:35,hdgTo:[-1,-.15]}),
+ mkRed({id:'EWR',platType:'EWR',kind:'ground',nm:'EWR',emits:['EWR-L'],x:420,y:108}),
+ mkRed({id:'HQ9',platType:'HQ-9',kind:'ground',nm:'SAM',emits:['SAM-SR','HF-S','TDL','SAM-EN'],
+   x:366,y:166,lethal:96}),
+ mkRed({id:'HF',platType:'HF-334',kind:'ground',nm:'HF',emits:['HF-S'],x:400,y:140}),
+ mkRed({id:'CIV',platType:'AIRLINER',kind:'air',ident:'NEU',nm:'CIVIL',emits:['ATC'],x:300,y:266,kt:460,hdgTo:[.05,-1]})
+];
+reds.forEach(t=>{
+  if(t.hdgTo){const m=Math.hypot(t.hdgTo[0],t.hdgTo[1]);
+    t.vx=t.hdgTo[0]/m*t.kt/3600*TSCALE; t.vy=t.hdgTo[1]/m*t.kt/3600*TSCALE;}
+  else {t.vx=0;t.vy=0;}
+});
+const HQ9=()=>reds.find(r=>r.id==='HQ9');
+const KJ=()=>reds.find(r=>r.id==='KJ');
+function respawnRed(t){
+  t.x=WORLD.w+18+Math.random()*40; t.y=60+Math.random()*(WORLD.h-120);
+  const kt=460+Math.random()*140;
+  t.vx=-(kt/3600*TSCALE)*(0.9+Math.random()*.2); t.vy=(Math.random()-.5)*1.1;
+}
+
+/* ── ELINT classification ── */
+function emittersOn(u){
+  const out=[];
+  for(const s of u.emits){
+    const k=SIGLIB[s];
+    if(k.dl){ if(st.redTdl)out.push(s); }
+    else if(s==='SAM-EN'){ if(st.redSam&&u.engaging)out.push(s); }
+    else if(k.kind.startsWith('SAM')){ if(st.redRad&&st.redSam)out.push(s); }
+    else { if(st.redRad)out.push(s); }
+  }
+  return out;
+}
+function classify(u){
+  const sigs=Object.keys(u.det).filter(s=>st.simT-u.seen[s]<6);
+  if(!sigs.length)return{conf:0,cls:'lo',verdict:'UNKNOWN',cands:[],sigs:[],top:'—'};
+  let cands=null;
+  for(const s of sigs){const h=SIGLIB[s].hosts; cands=cands?cands.filter(c=>h.includes(c)):h.slice();}
+  if(!cands||!cands.length)cands=['ambiguous'];
+  let conf = cands.length<=1 ? 0.70+0.07*sigs.length
+           : cands.length<=3 ? 0.36+0.06*sigs.length
+           :                    0.14+0.04*sigs.length;
+  conf=clamp(conf,0.1,0.98);
+  const cls=conf>=0.8?'hi':conf>=0.5?'md':'lo';
+  const verdict=conf>=0.8?'CONFIRMED':conf>=0.5?'PROBABLE':'POSSIBLE';
+  return{conf,cls,verdict,cands,sigs,top:cands[0]};
+}
+
+/* ═══════ scenarios ═══════ */
+const BASE={redRad:true,redTdl:true,redSat:true,redSam:true,
+  growlerTdl:false,growlerRad:false,gndJam:false,eaRadar:false,eaL16:false,eaSat:false,link:true};
+const SCENARIOS=[
+ {id:'isr',nm:'ISR · ELINT COLLECT',
+  obj:'Classify the red order of battle. Watch confidence climb as corroborating signatures arrive — a lone shared search radar stays POSSIBLE; add a unique fire-control or a second emitter and it firms to PROBABLE / CONFIRMED.',
+  apply(){Object.assign(st,BASE,{satBand:'X'});F.strike1.active=false;F.strike2.active=false;}},
+ {id:'ingress',nm:'BLUE INGRESS',
+  obj:'Push STRIKE 21/22 through the HQ-9 SAM ring. The ring is cued by the KJ-2000 AEW over the red datalink — jam the datalink (Growler) AND the red SATCOM (ground jammer) to break the targeting handoff before the package is ENGAGED.',
+  apply(){Object.assign(st,BASE,{satBand:'X'});F.strike1.active=true;F.strike2.active=true;
+    F.strike1.route=0;F.strike2.route=0;}},
+ {id:'a2ad',nm:'RED ANTI-ACCESS',
+  obj:'Red opens the fight jamming your Link 16 and your SATCOM uplink. The uplink jammer sits inside your X-band footprint — retune SATCOM to the Ka spot beam so its narrow footprint excludes the jammer and connectivity returns.',
+  apply(){Object.assign(st,BASE,{eaRadar:true,eaL16:true,eaSat:true,satBand:'X'});
+    F.strike1.active=false;F.strike2.active=false;}}
+];
+function setScenario(id){
+  st.scenario=id; SCENARIOS.find(s=>s.id===id).apply();
+  st.tracks=[];st.plots=[];st.desig=null;st.beamHist=[];st.pulses=[];st.missiles=[];
+  reds.forEach(r=>{r.det={};r.seen={};r.engaging=false;});
+  st.prevMode=blueMode();st.prevPkg='—';st.satNullLog=false;
+  log(`SCENARIO — ${SCENARIOS.find(s=>s.id===id).nm}`,'hot');
+  sync();
+}
+
+/* ═══════ DOM build ═══════ */
+function buildControls(){
+  SCENARIOS.forEach(s=>{const b=document.createElement('button');
+    b.innerHTML=`${s.nm}`; b.dataset.id=s.id; b.onclick=()=>setScenario(s.id); $('#scenGrp').appendChild(b);});
+  PLATFORMS.forEach(p=>{const b=document.createElement('button');
+    b.innerHTML=`<span class="nm">${p.nm}</span><span class="rl">${p.rl}</span>`;
+    b.dataset.id=p.id;
+    b.onclick=()=>{st.plat=p.id;st.beamHist=[];st.pulses=[];log(`SENSOR SHIFT — ${p.nm}`,'hot');sync();};
+    $('#platGrp').appendChild(b);});
+  BANDS.forEach(bd=>{const b=document.createElement('button');
+    b.innerHTML=`${bd.id}<small>${bd.lab}</small>`;b.dataset.id=bd.id;
+    b.onclick=()=>retune(bd.id);$('#bandGrp').appendChild(b);});
+  WFS.forEach(w=>{const b=document.createElement('button');
+    b.innerHTML=`${w.nm}<small>${w.sub}</small>`;b.dataset.id=w.id;
+    b.onclick=()=>{st.wf=w.id;st.pulses=[];log(`WAVEFORM — ${w.nm}`);sync();};$('#wfGrp').appendChild(b);});
+  PRFS.forEach(p=>{const b=document.createElement('button');
+    b.innerHTML=`${p.id}<small>${p.khz} kHz</small>`;b.dataset.id=p.id;
+    b.onclick=()=>{st.prf=p.id;sync();};$('#prfGrp').appendChild(b);});
+  SCANS.forEach(s=>{const b=document.createElement('button');
+    b.innerHTML=`${s.id}<small>${s.sub}</small>`;b.dataset.id=s.id;
+    b.onclick=()=>{st.scan=s.id;
+      if(s.id==='STT'&&!st.desig)log('STT — DESIGNATE A TRACK FIRST','warn');else log(`SCAN — ${s.nm}`);
+      sync();};$('#scanGrp').appendChild(b);});
+  SATBANDS.forEach(sb=>{const b=document.createElement('button');
+    b.innerHTML=`${sb.id}<small>${sb.rate}</small>`;b.dataset.id=sb.id;
+    b.onclick=()=>{st.satBand=sb.id;st.satNullLog=false;
+      log(`SATCOM RETUNE — ${sb.id} · ${sb.lab}${sb.spot?' · SPOT':''}`,'net');sync();};$('#satGrp').appendChild(b);});
+  BANDS.forEach(bd=>{const b=document.createElement('button');
+    b.innerHTML=`${bd.id}`;b.dataset.id=bd.id;
+    b.onclick=()=>{st.jamBand=bd.id;log(`GND JAMMER — TUNED ${bd.id}-BAND`);sync();};$('#jamBandGrp').appendChild(b);});
+
+  const T=(id,key,onmsg,offmsg,oncls,offcls)=>{$('#'+id).onclick=()=>{st[key]=!st[key];
+    log(st[key]?onmsg:offmsg,st[key]?(oncls||'bad'):(offcls||'hot'));sync();};};
+  T('tglRedRad','redRad','RED RADARS RADIATING — ESM COLLECTING','RED FORCE EMCON — RADARS COLD','warn','hot');
+  T('tglRedTdl','redTdl','RED TAC DATALINK ACTIVE','RED TAC DATALINK OFF','warn','hot');
+  T('tglRedSat','redSat','RED SATCOM C2 UP','RED SATCOM C2 OFF','warn','hot');
+  T('tglRedSam','redSam','HQ-9 SAM SYSTEM ACTIVE','HQ-9 SAM OFFLINE','warn','hot');
+  T('tglGrowlerTdl','growlerTdl','GROWLER — JAMMING RED TAC DATALINK','GROWLER — TDL JAM OFF','net','hot');
+  T('tglGrowlerRad','growlerRad','GROWLER — NOISE VS RED RADAR','GROWLER — RADAR JAM OFF','net','hot');
+  T('tglGndJam','gndJam','GND JAMMER — RED SATCOM UPLINK','GND JAMMER — OFF AIR','net','hot');
+  $('#tglEaRadar').onclick=()=>{st.eaRadar=!st.eaRadar;log(st.eaRadar?'RED EA — STANDOFF RADAR NOISE UP':'RED EA — RADAR JAMMER OFF',st.eaRadar?'bad':'hot');sync();};
+  $('#tglEaL16').onclick=()=>{st.eaL16=!st.eaL16;log(st.eaL16?'RED EA — STROBING LINK 16 BAND':'RED EA — L16 JAMMER OFF',st.eaL16?'bad':'hot');sync();};
+  $('#tglEaSat').onclick=()=>{st.eaSat=!st.eaSat;st.satNullLog=false;log(st.eaSat?'RED EA — UPLINK JAMMER VS WGS-11':'RED EA — UPLINK JAMMER OFF',st.eaSat?'bad':'hot');sync();};
+  $('#tglLink').onclick=()=>{st.link=!st.link;log(st.link?'BLUE LINK 16 ACTIVE':'BLUE LINK 16 SECURED (EMCON)',st.link?'net':'warn');sync();};
+  $('#tglTruth').onclick=()=>{st.truth=!st.truth;sync();};
+  $('#tglPause').onclick=()=>{st.paused=!st.paused;sync();};
+  $('#onboardX').onclick=()=>$('#onboard').classList.add('gone');
+
+  const vb=$('#viewbar');
+  const mk=(id,txt,fn)=>{const b=document.createElement('button');b.id=id;b.textContent=txt;b.onclick=fn;vb.appendChild(b);return b;};
+  mk('vbTheater','⌂ THEATER',()=>{cam.follow=null;cam.hdgUp=false;camT.x=220;camT.y=140;camT.z=1;syncView();});
+  BLUE_INSPECT.forEach(id=>mk('vb_'+id,F[id].nm.split(' ')[0],()=>followUnit(id)));
+  mk('vbHdg','HDG-UP',()=>{cam.hdgUp=!cam.hdgUp;syncView();});
+}
+function followUnit(id){cam.follow=id;camT.z=Math.max(camT.z,6.5);syncView();
+  log(`CAMERA — INSPECTING ${F[id].nm}`);}
+function syncView(){
+  $('#vbTheater').classList.toggle('on',!cam.follow);
+  BLUE_INSPECT.forEach(id=>$('#vb_'+id)&&$('#vb_'+id).classList.toggle('on',cam.follow===id));
+  const hb=$('#vbHdg');hb.classList.toggle('hid',!cam.follow||F[cam.follow].kind==='gndjam'||F[cam.follow].kind==='ship');
+  hb.classList.toggle('on',cam.hdgUp);
+}
+function retune(id){
+  if(st.eaRadar&&st.band!==id){st.jamHoldUntil=st.simT+4;log('BAND CHANGE — JAMMER RETUNING (4s WINDOW)','warn');}
+  st.band=id;log(`RETUNE — ${id}-BAND / ${BANDS.find(b=>b.id===id).f.toFixed(1)} GHZ`);sync();
+}
+
+/* ═══════ chips / sync ═══════ */
+const redC2=()=>(!st.redRad&&!st.redSam)?'EMCON':
+  redTdlUp()?(redSatUp()?'NETWORKED':'TAC-ONLY'):(redSatUp()?'NO TDL':'SEVERED');
+function sync(){
+  const set=(sel,val)=>document.querySelectorAll(sel).forEach(b=>b.classList.toggle('on',b.dataset.id===val));
+  document.querySelectorAll('#scenGrp button').forEach(b=>b.classList.toggle('on',b.dataset.id===st.scenario));
+  set('#platGrp button',st.plat);set('#bandGrp button',st.band);set('#wfGrp button',st.wf);
+  set('#scanGrp button',st.scan);set('#satGrp button',st.satBand);set('#jamBandGrp button',st.jamBand);
+  document.querySelectorAll('#prfGrp button').forEach(b=>{b.classList.toggle('on',b.dataset.id===st.prf);b.disabled=st.wf==='CW';});
+  $('#prfHint').textContent=st.wf==='CW'?'— N/A FOR CW':`~${(80.9/prf().khz).toFixed(0)} NM UNAMB`;
+  [['tglRedRad','redRad'],['tglRedTdl','redTdl'],['tglRedSat','redSat'],['tglRedSam','redSam'],
+   ['tglGrowlerTdl','growlerTdl'],['tglGrowlerRad','growlerRad'],['tglGndJam','gndJam'],
+   ['tglEaRadar','eaRadar'],['tglEaL16','eaL16'],['tglEaSat','eaSat'],
+   ['tglLink','link'],['tglTruth','truth'],['tglPause','paused']].forEach(([i,k])=>$('#'+i).classList.toggle('on',st[k]));
+  const m=blueMode();
+  $('#chipNet').textContent='BLUE NET: '+(m==='L16'?'LINK 16':m==='SATCOM'?'SATCOM-'+st.satBand:'DARK');
+  $('#chipNet').style.color=m==='DARK'?C.red:C.amber;
+  const rc=redC2();
+  $('#chipRed').textContent='RED C2: '+rc;
+  $('#chipRed').style.color=(rc==='SEVERED'||rc==='EMCON')?C.green:rc==='NETWORKED'?C.red:C.yellow;
+  const pk=$('#chipPkg');
+  if(st.scenario==='ingress'){pk.textContent='PKG: '+st.pkgState;
+    pk.style.color=st.pkgState==='ENGAGED'?C.red:st.pkgState==='TRACKED'?C.yellow:st.pkgState==='SAFE'?C.green:C.dim;}
+  else{pk.textContent='PKG: —';pk.style.color=C.dim;}
+  const sc=SCENARIOS.find(s=>s.id===st.scenario);
+  $('#objective').innerHTML=`<div class="oh">SCENARIO · ${sc.nm}</div><div class="ob">${sc.obj}</div>`+
+    (st.scenario==='ingress'?`<div class="os" style="color:${st.pkgState==='ENGAGED'?C.red:st.pkgState==='SAFE'?C.green:C.yellow}">PACKAGE: ${st.pkgState}</div>`:'');
+  $('#onboardTxt').innerHTML=onboardFor();
+  educate();
+}
+function onboardFor(){
+  if(st.scenario==='ingress')return `<b>Ingress:</b> the package is cued by the KJ-2000 → red datalink → HQ-9. Turn on <b>Growler: Jam Red TDL</b> and <b>Gnd Jammer: Red SATCOM</b> and watch RED C2 drop to SEVERED and the package go SAFE.`;
+  if(st.scenario==='a2ad')return `<b>Anti-access:</b> your net is being jammed. Retune <b>Blue SATCOM</b> to <b>Ka</b> — the spot-beam footprint excludes the red uplink jammer and connectivity returns.`;
+  return `<b>ELINT:</b> double-click any unit to inspect it up close. Read the <b>THREAT ID</b> panel — toggle <b>Red Radars</b> to EMCON and watch confidence collapse to just the datalink.`;
+}
+
+/* ═══════ log ═══════ */
+function log(msg,cls){
+  const ul=$('#log'),li=document.createElement('li');if(cls)li.className=cls;
+  const d=new Date(),z=n=>String(n).padStart(2,'0');
+  li.innerHTML=`<span class="t">${z(d.getUTCHours())}:${z(d.getUTCMinutes())}:${z(d.getUTCSeconds())}Z</span>${msg}`;
+  ul.prepend(li);while(ul.children.length>7)ul.removeChild(ul.lastChild);
+}
+
+/* ═══════ education ═══════ */
+function educate(){
+  const b=band(),w=wf(),s=SCANS.find(x=>x.id===st.scan),sb=satband(),m=blueMode();
+  let html=`<p>${b.blurb}</p><p>${w.blurb}`;
+  if(w.id!=='CW')html+=` ${prf().blurb} At ${prf().khz}&thinsp;kHz unambiguous range ≈ ${(80.9/prf().khz).toFixed(0)} NM.`;
+  html+=`</p><p>${s.blurb}</p><p>${sb.blurb}</p>`;
+  html+=`<p><span class="rd">Threat ID / ELINT:</span> your ESM listens passively and out-ranges your radar — it hears an emitter long before you can skin-paint the platform. Each intercept narrows <em>which</em> platforms use that emitter; a unique fire-control radar pins the type outright, while a search set shared across the J-10/11/16 family stays ambiguous until a second signature corroborates. Put red into <span class="rd">EMCON</span> and the picture collapses to whatever still radiates — often just the datalink.</p>`;
+  if(st.scenario==='ingress'||redC2()!=='NETWORKED'){
+    html+=`<p><span class="am">Red kill chain:</span> the KJ-2000 AEW radar sees your package from range and passes tracks over the red tactical datalink to the HQ-9 battery — the SAM shoots on someone else’s picture. Sever the datalink (Growler) and the ground SATCOM reachback (jammer) and the SAM is reduced to its own horizon: it can’t engage what it can’t see.</p>`;
+  }
+  if(st.eaRadar)html+=`<p><span class="rd">Radar noise jamming:</span> a strobe of noise on the jammer’s bearing drowns echoes until <span class="rd">burn-through</span> range. Narrow high-band beams shrink the strobe; retuning forces the jammer to chase you.</p>`;
+  $('#analysis').innerHTML=html;
+}
+
+/* ═══════ readouts / comms / threats ═══════ */
+function readouts(){
+  const b=band();
+  const rows=[
+    ['BAND / FREQ',`${b.id} · ${b.f.toFixed(1)} GHz`,'cy'],
+    ['WAVELENGTH',`${(29.98/b.f).toFixed(1)} cm`],
+    ['WAVEFORM',wf().id],['PRF',st.wf==='CW'?'— (CW)':`${prf().khz.toFixed(1)} kHz`],
+    ['BEAMWIDTH',`${beamDeg().toFixed(1)}°`],['INSTR. RANGE',`${Math.round(maxRange())} NM`],
+    ['SCAN',st.scan==='STT'?'LOCKED':plat().kind==='ship'?'E-SCAN AESA':`${plat().scanT.toFixed(1)} s MECH`],
+    ['TRACKS HELD',String(st.tracks.filter(t=>t.firm&&!t.dead).length)],
+    ['EA THREAT',st.eaRadar?(st.simT<st.jamHoldUntil?'RETUNING':'BARRAGE'):'NONE',st.eaRadar?'rd':'']
+  ];
+  $('#readouts').innerHTML=rows.map(r=>`<dt>${r[0]}</dt><dd class="${r[2]||''}">${r[1]}</dd>`).join('');
+  const m=blueMode(),sb=satband();
+  const crows=[
+    ['BLUE L16',!st.link?'SECURED':st.eaL16?'JAMMED':'OK',!st.link?'':st.eaL16?'rd':'gr'],
+    ['BLUE SAT',blueSatDenied()?'UPLINK JAMMED':st.eaSat?`${sb.id}·SPOT NULLS`:`${sb.id}·${sb.rate}`,blueSatDenied()?'rd':st.eaSat?'gr':''],
+    ['ACTIVE PATH',m==='L16'?'LINK 16':m==='SATCOM'?`WGS-11 ${sb.id}·+0.24s`:'DARK',m==='DARK'?'rd':'am'],
+    ['RED TDL',redTdlUp()?'PASSING TRK':st.redTdl?'JAMMED':'OFF',redTdlUp()?'rd':'gr'],
+    ['RED SATCOM',redSatUp()?'C2 UP':'SEVERED',redSatUp()?'rd':'gr']
+  ];
+  $('#comms').innerHTML=crows.map(r=>`<dt>${r[0]}</dt><dd class="${r[2]||''}">${r[1]}</dd>`).join('');
+}
+function threatPanel(){
+  const list=reds.map(u=>({u,c:classify(u)})).filter(x=>x.c.sigs.length)
+    .sort((a,b)=>b.c.conf-a.c.conf);
+  const host=$('#threats');
+  if(!list.length){host.innerHTML='<div class="hintline" style="padding:2px">NO EMISSIONS INTERCEPTED — red is EMCON or out of ESM range.</div>';return;}
+  host.innerHTML=list.map(({u,c})=>{
+    const pct=Math.round(c.conf*100);
+    const sel=st.selThreat===u.id?' sel':'';
+    const sigs=c.sigs.map(s=>`<span class="sig${SIGLIB[s].dl?' dl':''}">${SIGLIB[s].kind}</span>`).join('');
+    const alt=c.cands.length>1?`<div class="alt">candidates: ${c.cands.slice(0,4).join(' / ')}${c.cands.length>4?' …':''}</div>`:'';
+    const nm=c.cls==='hi'?c.top:c.cands.length<=3?c.top:'networked emitter';
+    return `<div class="thr${sel}" data-id="${u.id}">
+      <div class="tr1"><span class="nm">${c.verdict} · <b class="conf-${c.cls}">${nm}</b> <span class="q">${u.engaging?'· ENGAGING':''}</span></span><span class="pct conf-${c.cls}">${pct}%</span></div>
+      <div class="bar"><i class="b-${c.cls}" style="width:${pct}%"></i></div>
+      <div class="sigs">${sigs}</div>${alt}</div>`;
+  }).join('');
+  host.querySelectorAll('.thr').forEach(el=>el.onclick=()=>{
+    st.selThreat=st.selThreat===el.dataset.id?null:el.dataset.id;
+    const u=reds.find(r=>r.id===el.dataset.id);
+    if(u&&st.selThreat){camT.x=u.x;camT.y=u.y;if(cam.follow){cam.follow=null;syncView();}}
+    threatPanel();});
+}
+function desigPanel(){
+  const el=$('#trksel'),tk=st.desig;
+  if(!tk||tk.dead){el.textContent='NONE — click a track symbol on the scope.';return;}
+  const s=F[st.plat];
+  const px=tk.x+tk.vx*(st.simT-tk.tUpd),py=tk.y+tk.vy*(st.simT-tk.tUpd);
+  const rng=dist(s.x,s.y,px,py),brg=(Math.atan2(py-s.y,px-s.x)*180/Math.PI+450)%360;
+  const idn=tk.ident==='HOS'?'HOSTILE':tk.ident==='NEU'?'NEUTRAL':'UNKNOWN';
+  const cl=tk.src?classify(tk.src):null;
+  el.innerHTML=`<b>TRK ${tk.id}</b> · ${idn}${cl&&cl.sigs.length?' · ESM '+(cl.cls==='hi'?cl.top:cl.verdict):''}<br>`+
+    `BRG ${brg.toFixed(0).padStart(3,'0')}° · RNG ${rng.toFixed(0)} NM · Q${tk.q}<br>`+
+    `${tk.dop!=null?'CLOSURE '+Math.round(tk.dop)+' KT':'NO DOPPLER'} · AGE ${(st.simT-tk.tUpd).toFixed(1)}s`;
+}
+
+/* ═══════ canvas + camera ═══════ */
+const map=$('#map'),mctx=map.getContext('2d');
+const spec=$('#spec'),sctx=spec.getContext('2d');
+let MW=0,MH=0,SW=0,SH=0,SC=1,DPR=1,VS=1;
+function resize(){
+  DPR=Math.min(devicePixelRatio||1,2);
+  MW=map.clientWidth;MH=map.clientHeight;map.width=MW*DPR;map.height=MH*DPR;
+  SC=Math.min(MW/WORLD.w,MH/WORLD.h)*0.98;
+  SW=spec.clientWidth;SH=spec.clientHeight;spec.width=SW*DPR;spec.height=SH*DPR;
+  seedParticles();
+}
+addEventListener('resize',resize);
+function W2S(x,y){const dx=(x-cam.x)*VS,dy=(y-cam.y)*VS,c=Math.cos(cam.rot),s=Math.sin(cam.rot);
+  return[MW/2+dx*c-dy*s,MH/2+dx*s+dy*c];}
+function S2W(sx,sy){const dx=sx-MW/2,dy=sy-MH/2,c=Math.cos(cam.rot),s=Math.sin(cam.rot);
+  return[cam.x+(dx*c+dy*s)/VS,cam.y+(-dx*s+dy*c)/VS];}
+const A=a=>a+cam.rot;
+function updateCam(rdt){
+  const k=1-Math.exp(-6*rdt);let rotT=0;
+  if(cam.follow){const e=F[cam.follow];camT.x=e.x;camT.y=e.y;if(cam.hdgUp)rotT=-e.h-Math.PI/2;}
+  cam.x+=(camT.x-cam.x)*k;cam.y+=(camT.y-cam.y)*k;cam.z+=(camT.z-cam.z)*k;
+  cam.rot+=angN(rotT-cam.rot)*k;VS=SC*cam.z;
+}
+let ptr=null;
+map.addEventListener('pointerdown',e=>{ptr={x:e.offsetX,y:e.offsetY,moved:false};
+  try{map.setPointerCapture(e.pointerId);}catch(_){}});
+map.addEventListener('pointermove',e=>{if(!ptr)return;
+  const dx=e.offsetX-ptr.x,dy=e.offsetY-ptr.y;
+  if(Math.abs(dx)+Math.abs(dy)>4)ptr.moved=true;
+  if(ptr.moved){if(cam.follow){cam.follow=null;syncView();camT.x=cam.x;camT.y=cam.y;}
+    const c=Math.cos(cam.rot),s=Math.sin(cam.rot);
+    camT.x-=(dx*c+dy*s)/VS;camT.y-=(-dx*s+dy*c)/VS;ptr.x=e.offsetX;ptr.y=e.offsetY;}});
+map.addEventListener('pointerup',e=>{if(ptr&&!ptr.moved)clickScope(e.offsetX,e.offsetY);ptr=null;});
+map.addEventListener('wheel',e=>{e.preventDefault();
+  const f=Math.pow(1.0015,-e.deltaY),nz=clamp(camT.z*f,0.75,15);
+  if(!cam.follow){const[wx,wy]=S2W(e.offsetX,e.offsetY),r=nz/camT.z;
+    camT.x=wx-(wx-camT.x)/r;camT.y=wy-(wy-camT.y)/r;}
+  camT.z=nz;},{passive:false});
+map.addEventListener('dblclick',e=>{
+  for(const id of BLUE_INSPECT){const[x,y]=W2S(F[id].x,F[id].y);
+    if(dist(e.offsetX,e.offsetY,x,y)<26){followUnit(id);return;}}});
+function clickScope(mx,my){
+  let best=null,bd=20;
+  for(const tk of st.tracks){if(!tk.firm||tk.dead)continue;
+    const age=st.simT-tk.tUpd;const[x,y]=W2S(tk.x+tk.vx*age,tk.y+tk.vy*age);
+    const d=dist(mx,my,x,y);if(d<bd){bd=d;best=tk;}}
+  if(best){st.desig=best;if(best.src)st.selThreat=best.src.id;
+    log(`TRK ${best.id} DESIGNATED`,'hot');threatPanel();return;}
+  // click a red emitter (ground site) to select in threat panel
+  let bu=null,bud=18;
+  for(const u of reds){const[x,y]=W2S(u.x,u.y);const d=dist(mx,my,x,y);
+    if(d<bud&&classify(u).sigs.length){bud=d;bu=u;}}
+  if(bu){st.selThreat=st.selThreat===bu.id?null:bu.id;threatPanel();}
+}
+let parts=[];
+function seedParticles(){const n=RM?40:110;parts=[];
+  for(let i=0;i<n;i++)parts.push({x:Math.random()*MW,y:Math.random()*MH,
+    vx:(Math.random()-.5)*(RM?0:7),vy:(Math.random()-.5)*(RM?0:7),r:Math.random()<.12?1.6:1});}
+
+/* ═══════ sim: motion ═══════ */
+function moveAll(dt){
+  for(const id of ['awacs','fighter','growler']){const e=F[id],o=e.orbit;o.a=(o.a||0)+o.om*dt;
+    e.x=o.cx+Math.cos(o.a)*o.r;e.y=o.cy+Math.sin(o.a)*o.r;e.h=o.a+Math.PI/2;}
+  // strike package
+  for(const id of ['strike1','strike2']){const u=F[id];
+    const baseY=id==='strike1'?150:163;
+    if(u.active){ // ingress to the strike objective inside the MEZ and hold station
+      u.x=clamp(u.x+(520/3600*TSCALE)*dt,110,312);
+      u.y+=(baseY-u.y)*0.03;u.h=0;}
+    else{u.x+=(120-u.x)*0.04;u.y+=(baseY-u.y)*0.04;u.h=0;}}
+  // red movers
+  for(const t of reds){
+    if(t.kind==='ground')continue;
+    if(t.orbit){const o=t.orbit;o.a=(o.a||0)+(t.kt/3600*TSCALE)/o.r*dt;
+      t.x=o.cx+Math.cos(o.a)*o.r;t.y=o.cy+Math.sin(o.a)*o.r;
+      t.vx=-Math.sin(o.a)*(t.kt/3600*TSCALE);t.vy=Math.cos(o.a)*(t.kt/3600*TSCALE);t.h=o.a+Math.PI/2;continue;}
+    t.x+=t.vx*dt;t.y+=t.vy*dt;t.h=Math.atan2(t.vy,t.vx);
+    if(t.x<-30||t.x>WORLD.w+70||t.y<-40||t.y>WORLD.h+40)respawnRed(t);}
+}
+
+/* ═══════ sim: beam ═══════ */
+function steerBeam(dt){
+  const p=plat(),sp=F[st.plat];
+  if(st.scan==='STT'&&st.desig&&!st.desig.dead){const tk=st.desig;
+    const px=tk.x+tk.vx*(st.simT-tk.tUpd),py=tk.y+tk.vy*(st.simT-tk.tUpd);
+    st.beamA=Math.atan2(py-sp.y,px-sp.x);}
+  else if(p.kind==='fighter'){const half=(55-beamDeg()/2)*Math.PI/180;
+    st.beamA=sp.h+Math.sin(st.simT*TAU/p.scanT/2)*half;}
+  else if(p.kind==='ship'){
+    if(st.simT>=st.dwellNext){st.dwellNext=st.simT+0.12;st.dwellIdx++;
+      const firm=st.tracks.filter(t=>t.firm&&!t.dead);
+      if(st.dwellIdx%4===0&&firm.length){const tk=firm[Math.floor(st.dwellIdx/4)%firm.length];
+        const px=tk.x+tk.vx*(st.simT-tk.tUpd),py=tk.y+tk.vy*(st.simT-tk.tUpd);
+        st.beamA=Math.atan2(py-sp.y,px-sp.x);}
+      else{st.rasterAz+=beamHalf()*4.4;st.beamA=st.rasterAz;}}}
+  else st.beamA+=TAU/p.scanT*dt;
+  st.beamHist.push({a:st.beamA,t:st.simT});
+  while(st.beamHist.length&&st.simT-st.beamHist[0].t>1.35)st.beamHist.shift();
+}
+function firePulses(dt){
+  if(st.wf==='PULSE'||st.wf==='PD'){const iv=st.wf==='PD'?prf().vis*.55:prf().vis;
+    if(st.simT-st.lastPulse>iv){st.lastPulse=st.simT;st.pulses.push({r:2,a:st.beamA});}}
+  else{if(st.simT-st.lastPulse>0.12){st.lastPulse=st.simT;st.pulses.push({r:2,a:st.beamA,cw:true});}}
+  const spd=maxRange()/1.15;
+  for(const pu of st.pulses)pu.r+=spd*dt;
+  st.pulses=st.pulses.filter(pu=>pu.r<maxRange());
+}
+function jammerGeom(){const j=SITES.eaL16,s=F[st.plat];   // red radar noise jammer bearing (from EW site)
+  const jm=reds.find(r=>r.id==='J16A')||{x:340,y:150};
+  const src=st.eaRadar?{x:jm.x,y:jm.y}:j;
+  const brg=Math.atan2(src.y-s.y,src.x-s.x);
+  return{src,brg,strobeHalf:Math.max(beamHalf()*1.7,3*Math.PI/180),active:st.eaRadar&&st.simT>=st.jamHoldUntil};}
+
+/* ═══════ sim: detection + tracks ═══════ */
+function detect(){
+  const s=F[st.plat],bh=beamHalf(),R=maxRange(),b=band();
+  const jam=jammerGeom();
+  for(const t of reds){
+    if(t.kind==='ground')continue;
+    const d=dist(s.x,s.y,t.x,t.y);if(d>R||d<3)continue;
+    const brg=Math.atan2(t.y-s.y,t.x-s.x);
+    if(Math.abs(angN(brg-st.beamA))>bh)continue;
+    const gap=st.scan==='STT'?0.28:plat().scanT*0.45;
+    if(st.simT-t.lastPaint<gap)continue;
+    t.lastPaint=st.simT;
+    if(jam.active&&Math.abs(angN(brg-jam.brg))<jam.strobeHalf&&d>R*0.32){
+      for(let i=0;i<3;i++)st.specks.push({a:jam.brg+(Math.random()-.5)*jam.strobeHalf*2,r:R*(0.25+Math.random()*.75),t:st.simT});
+      continue;}
+    const mBrg=brg+gauss()*bh*0.33;
+    const closure=-(((t.x-s.x)/d)*t.vx+((t.y-s.y)/d)*t.vy)/TSCALE*3600;
+    if(st.wf==='CW')st.plots.push({type:'strobe',a:mBrg,t:st.simT,dop:closure,tgt:t});
+    else{const mR=d+gauss()*b.res,mx=s.x+Math.cos(mBrg)*mR,my=s.y+Math.sin(mBrg)*mR;
+      st.plots.push({type:'echo',x:mx,y:my,t:st.simT,dop:st.wf==='PD'?closure:null,tgt:t});
+      if(st.scan!=='SEARCH')correlate(mx,my,closure,t);}}
+  st.plots=st.plots.filter(p=>st.simT-p.t<5);
+  st.specks=st.specks.filter(p=>st.simT-p.t<2.2);
+}
+function spawnIff(fx,fy,tx,ty,reply,delay){st.iffs.push({fx,fy,tx,ty,reply,t0:st.simT+(delay||0),dur:0.9});st.iffPulse=1;}
+function correlate(mx,my,closure,tgt){
+  let tk=st.tracks.find(k=>!k.dead&&k.src===tgt);
+  if(!tk)tk=st.tracks.find(k=>!k.dead&&dist(k.x+k.vx*(st.simT-k.tUpd),k.y+k.vy*(st.simT-k.tUpd),mx,my)<(k.hits<3?28:16));
+  if(!tk){tk={id:++st.trkSeq,x:mx,y:my,vx:0,vy:0,hits:1,firm:false,tUpd:st.simT,tMeas:st.simT,
+      ident:'UNK',q:1,dop:null,src:tgt};st.tracks.push(tk);
+    log(`NEW CONTACT — TRK ${tk.id} TENTATIVE`);spawnIff(F[st.plat].x,F[st.plat].y,mx,my,false,0);return;}
+  const dtm=Math.max(st.simT-tk.tMeas,0.2);
+  const sm=tk.hits<=1?1:(st.scan==='STT'&&st.desig===tk?0.55:0.22);
+  tk.vx=lerp(tk.vx,(mx-tk.x)/dtm,sm);tk.vy=lerp(tk.vy,(my-tk.y)/dtm,sm);
+  tk.x=lerp(tk.x,mx,0.6);tk.y=lerp(tk.y,my,0.6);
+  tk.tUpd=st.simT;tk.tMeas=st.simT;tk.hits++;tk.dop=st.wf==='PD'?closure:tk.dop;
+  tk.q=clamp(Math.round(tk.hits/2),1,st.scan==='STT'&&st.desig===tk?9:6);
+  if(!tk.firm&&tk.hits>=3){tk.firm=true;
+    if(tgt.ident==='NEU'){tk.ident='NEU';spawnIff(mx,my,F[st.plat].x,F[st.plat].y,true,0.25);
+      log(`TRK ${tk.id} IFF MODE 3/C — NEUTRAL`,'good');}
+    else{tk.ident='HOS';const c=classify(tgt);
+      log(`TRK ${tk.id} FIRM — ${c.sigs.length?(c.cls==='hi'?'ESM '+c.top:'HOSTILE'):'NO IFF'}`,'bad');}}
+}
+function ageTracks(){
+  for(const tk of st.tracks){const age=st.simT-tk.tUpd;
+    if(age>22&&!tk.dead){tk.dead=true;if(st.desig===tk)log(`TRK ${tk.id} DROPPED`,'warn');}}
+  st.tracks=st.tracks.filter(tk=>!tk.dead||st.simT-tk.tUpd<23);
+  if(st.desig&&st.desig.dead)st.desig=null;
+}
+
+/* ═══════ sim: ELINT ═══════ */
+function elint(dt){
+  for(const u of reds){
+    const on=emittersOn(u);
+    for(const s of on){
+      if(!(s in u.det)){ if(Math.random()<1-Math.exp(-2.2*dt)){u.det[s]=st.simT;u.seen[s]=st.simT;
+        if(s==='SAM-EN')log('ESM — HQ-9 HT-233 ENGAGEMENT RADAR ACTIVE','bad');}}
+      else u.seen[s]=st.simT;
+    }
+  }
+}
+
+/* ═══════ sim: red kill chain ═══════ */
+function killChain(dt){
+  const hq=HQ9(),kj=KJ();
+  const actives=['strike1','strike2'].map(id=>F[id]).filter(u=>u.active);
+  const lead=actives.length?actives.reduce((a,b)=>a.x>b.x?a:b):null;
+  const kjRange=redSatUp()?210:130;
+  let engaged=false,held=false;
+  if(lead){
+    held=st.redRad&&(dist(kj.x,kj.y,lead.x,lead.y)<kjRange||dist(reds.find(r=>r.id==='EWR').x,reds.find(r=>r.id==='EWR').y,lead.x,lead.y)<kjRange);
+    const inRing=dist(hq.x,hq.y,lead.x,lead.y)<hq.lethal;
+    const cued=(redTdlUp()&&held)||(st.redRad&&dist(hq.x,hq.y,lead.x,lead.y)<hq.lethal*0.42);
+    engaged=st.redSam&&inRing&&cued;
+  }
+  hq.engaging=engaged;
+  st.engaged=engaged;
+  st.pkgState=!lead?'—':engaged?'ENGAGED':held?'TRACKED':'SAFE';
+  st.pkgSurvivable=!!lead&&st.redSam&&dist(hq.x,hq.y,lead.x,lead.y)<hq.lethal&&!engaged;
+  if(st.pkgState!==st.prevPkg){
+    if(st.pkgState==='ENGAGED')log('◆ HQ-9 ENGAGING PACKAGE — SAM LAUNCH','bad');
+    else if(st.prevPkg==='ENGAGED')log('RED KILL CHAIN BROKEN — SAM CANNOT COMPLETE ENGAGEMENT','good');
+    else if(st.pkgState==='SAFE'&&st.prevPkg!=='—')log('PACKAGE SAFE — RED HAS NO TRACK','good');
+    else if(st.pkgState==='TRACKED')log('PACKAGE TRACKED BY RED IADS','warn');
+    st.prevPkg=st.pkgState;
+  }
+  // missiles
+  if(engaged){hq.mslCd=(hq.mslCd||0)-dt;
+    if(hq.mslCd<=0){hq.mslCd=2.6;st.missiles.push({x:hq.x,y:hq.y,tx:lead.x,ty:lead.y,t:0});}}
+  for(const m of st.missiles){m.t+=dt;const spd=2600/3600*TSCALE;
+    const a=Math.atan2(m.ty-m.y,m.tx-m.x);m.x+=Math.cos(a)*spd*dt;m.y+=Math.sin(a)*spd*dt;m.tx=lead?lead.x:m.tx;m.ty=lead?lead.y:m.ty;}
+  st.missiles=st.missiles.filter(m=>m.t<3&&(!lead||dist(m.x,m.y,lead.x,lead.y)>4));
+}
+
+/* ═══════ sim: comms / packets ═══════ */
+function txTrack(){const m=blueMode(),from=F[st.plat];
+  for(const pid of NETIDS)if(pid!==st.plat)
+    st.packets.push({fx:from.x,fy:from.y,to:pid,via:m==='SATCOM'?'blue':null,t0:performance.now()/1000,dur:m==='SATCOM'?1.7:0.85});
+  st.msgCount++;st.netPulse=1;}
+function idlePackets(){const m=blueMode();
+  if(m!=='DARK'&&st.simT-st.lastIdle>1.8){st.lastIdle=st.simT;
+    const a=NETIDS[Math.floor(Math.random()*3)];let b=NETIDS[Math.floor(Math.random()*3)];
+    if(a===b)b=NETIDS[(NETIDS.indexOf(a)+1)%3];
+    st.packets.push({fx:F[a].x,fy:F[a].y,to:b,via:m==='SATCOM'?'blue':null,t0:performance.now()/1000,dur:m==='SATCOM'?2.0:1.1,idle:true});
+    st.msgCount++;}
+  if(st.simT-st.lastIffAmb>7){st.lastIffAmb=st.simT;
+    const o=F[['fighter','ship'][Math.floor(Math.random()*2)]];
+    spawnIff(F.awacs.x,F.awacs.y,o.x,o.y,false,0);spawnIff(o.x,o.y,F.awacs.x,F.awacs.y,true,0.3);}
+  // firm-track sharing on the net
+  for(const tk of st.tracks)if(m!=='DARK'&&tk.firm&&!tk.dead&&st.simT-(tk.tShare||0)>1.4){tk.tShare=st.simT;txTrack();break;}
+}
+function watchComms(){
+  const m=blueMode();
+  if(m!==st.prevMode){
+    if(m==='SATCOM')log(`PATH CHANGE — REROUTING VIA WGS-11 ${st.satBand} (+0.24s)`,'warn');
+    else if(m==='DARK')log('COMMS DARK — NO PATH TO NET','bad');
+    else log('PATH CHANGE — LINK 16 RESTORED','net');
+    st.prevMode=m;sync();
+  }
+  if(st.eaSat&&!blueSatDenied()&&!st.satNullLog){st.satNullLog=true;
+    log(`SPOT BEAM — RED UPLINK JAMMER OUTSIDE ${st.satBand} FOOTPRINT, NULLED`,'net');}
+}
+
+/* ═══════ render ═══════ */
+function curveLine(ctx,ax,ay,bx,by,bow){const mx=(ax+bx)/2+(by-ay)*bow,my=(ay+by)/2-(bx-ax)*bow;
+  ctx.beginPath();ctx.moveTo(ax,ay);ctx.quadraticCurveTo(mx,my,bx,by);ctx.stroke();}
+
+function drawMap(){
+  const ctx=mctx;ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,MW,MH);
+  drawGeo(ctx);drawParticles(ctx);
+  drawRedNet(ctx);drawSatLayer(ctx);drawBlueNet(ctx);
+  drawJam(ctx);drawBeam(ctx);drawPlots(ctx);
+  drawTruth(ctx);drawSites(ctx);
+  drawReds(ctx);drawFriendlies(ctx);
+  drawTracks(ctx);drawMissiles(ctx);drawPackets(ctx);drawIffs(ctx);drawHud(ctx);
+}
+
+function drawGeo(ctx){
+  ctx.strokeStyle='rgba(120,170,190,0.045)';ctx.lineWidth=1;ctx.beginPath();
+  const step=cam.z>4?10:40;
+  for(let x=-40;x<=WORLD.w+40;x+=step){const[a,b]=W2S(x,-40),[c,d]=W2S(x,WORLD.h+40);ctx.moveTo(a,b);ctx.lineTo(c,d);}
+  for(let y=-40;y<=WORLD.h+40;y+=step){const[a,b]=W2S(-40,y),[c,d]=W2S(WORLD.w+40,y);ctx.moveTo(a,b);ctx.lineTo(c,d);}
+  ctx.stroke();
+  const[rx,ry]=W2S(150,132);ctx.fillStyle=wt(0.06);ctx.font='600 15px '+FAM;
+  ctx.fillText('P H I L I P P I N E   S E A',rx-100,ry);
+  for(const isl of ISLANDS){ctx.beginPath();
+    isl.pts.forEach((p,i)=>{const[x,y]=W2S(p[0],p[1]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.closePath();
+    ctx.fillStyle=isl.nm==='RED MAINLAND'?'#12090B':'#0A1219';ctx.fill();
+    ctx.strokeStyle=isl.nm==='RED MAINLAND'?'rgba(255,92,74,.18)':'#1E2C3A';ctx.lineWidth=1;ctx.stroke();
+    if(isl.nm){const[lx,ly]=W2S(isl.lx,isl.ly);
+      ctx.fillStyle=isl.nm==='RED MAINLAND'?rd(0.2):wt(0.2);ctx.font='8.5px '+FAM;ctx.fillText(isl.nm,lx-24,ly);}}
+  // satellite footprints
+  const bf=blueFoot(),m=blueMode();const[bfx,bfy]=W2S(bf.cx,bf.cy);
+  ctx.setLineDash([4,6]);
+  ctx.strokeStyle=cy(m==='SATCOM'?0.35:0.14);ctx.lineWidth=1;
+  ctx.beginPath();ctx.ellipse(bfx,bfy,bf.rx*VS,bf.ry*VS,cam.rot,0,TAU);ctx.stroke();
+  ctx.fillStyle=cy(0.35);ctx.font='8.5px '+FAM;
+  ctx.fillText(`WGS-11 ${st.satBand} FOOTPRINT${satband().spot?' · SPOT':''}`,bfx-52,bfy-bf.ry*VS-5);
+  const[rfx,rfy]=W2S(redFoot.cx,redFoot.cy);
+  ctx.strokeStyle=rd(redSatUp()?0.18:0.08);
+  ctx.beginPath();ctx.ellipse(rfx,rfy,redFoot.rx*VS,redFoot.ry*VS,cam.rot,0,TAU);ctx.stroke();
+  ctx.fillStyle=rd(0.28);ctx.fillText('RED GEO FOOTPRINT',rfx-40,rfy+redFoot.ry*VS+11);
+  ctx.setLineDash([]);
+  const s=F[st.plat],[sx,sy]=W2S(s.x,s.y),R=maxRange()*VS;
+  ctx.setLineDash([2,5]);
+  for(let i=1;i<=3;i++){ctx.strokeStyle=i===3?cy(0.30):cy(0.10);
+    ctx.beginPath();ctx.arc(sx,sy,R*i/3,0,TAU);ctx.stroke();
+    ctx.fillStyle=i===3?cy(0.6):cy(0.28);ctx.font='9px '+FAM;
+    ctx.fillText(Math.round(maxRange()*i/3)+' NM',sx+R*i/3*0.7071+4,sy-R*i/3*0.7071-3);}
+  ctx.setLineDash([]);
+}
+function drawParticles(ctx){
+  for(const p of parts){if(!RM){p.x+=p.vx/60;p.y+=p.vy/60;
+    if(p.x<0)p.x+=MW;if(p.x>MW)p.x-=MW;if(p.y<0)p.y+=MH;if(p.y>MH)p.y-=MH;}
+    ctx.fillStyle=wt(p.r>1?0.14:0.08);ctx.fillRect(p.x,p.y,p.r,p.r);}
+  ctx.lineWidth=0.5;
+  for(let i=0;i<parts.length;i+=3){const p=parts[i];
+    for(let j=i+3;j<Math.min(i+24,parts.length);j+=3){const q=parts[j],d=dist(p.x,p.y,q.x,q.y);
+      if(d<70){ctx.strokeStyle=wt((1-d/70)*0.05);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke();}}}
+}
+function drawRedNet(ctx){
+  if(!redTdlUp())return;
+  const kj=KJ(),[kx,ky]=W2S(kj.x,kj.y);
+  ctx.setLineDash([2,7]);ctx.lineDashOffset=-performance.now()/70;ctx.strokeStyle=rd(0.16);ctx.lineWidth=1;
+  for(const u of reds){if(u===kj||u.ident==='NEU')continue;
+    if(!u.emits.includes('TDL'))continue;
+    const[ax,ay]=W2S(u.x,u.y);curveLine(ctx,ax,ay,kx,ky,0.09);}
+  ctx.setLineDash([]);
+  // targeting handoff pulse KJ -> HQ9 when engaging
+  if(HQ9().engaging){const hq=HQ9(),[hx,hy]=W2S(hq.x,hq.y);
+    ctx.strokeStyle=rd(0.5+0.3*Math.sin(performance.now()/90));ctx.lineWidth=1.5;
+    curveLine(ctx,kx,ky,hx,hy,0.09);
+    ctx.fillStyle=rd(0.8);ctx.font='8px '+FAM;ctx.fillText('TARGETING HANDOFF',(kx+hx)/2-30,(ky+hy)/2-5);}
+}
+function drawSatLayer(ctx){
+  const m=blueMode(),[bsx,bsy]=W2S(SATS.blue.x,SATS.blue.y),denied=blueSatDenied();
+  ctx.setLineDash([3,6]);ctx.lineDashOffset=-performance.now()/50;
+  for(const id of ['awacs','ship','fighter']){const e=F[id],[ax,ay]=W2S(e.x,e.y);
+    const hot=m==='SATCOM';
+    ctx.strokeStyle=denied?rd(0.10+0.06*Math.sin(performance.now()/60)):cy(hot?0.30:0.06);
+    ctx.lineWidth=hot?1.2:1;curveLine(ctx,ax,ay,bsx,bsy,-0.12);}
+  ctx.setLineDash([]);
+  // red uplink jammer vs blue sat
+  if(st.eaSat){const[jx,jy]=W2S(SITES.eaSat.x,SITES.eaSat.y);
+    ctx.strokeStyle=rd(denied?0.55:0.22);ctx.lineWidth=denied?1.6:1;
+    ctx.setLineDash([2,3]);ctx.lineDashOffset=-performance.now()/30;curveLine(ctx,jx,jy,bsx,bsy,-0.10);ctx.setLineDash([]);
+    ctx.fillStyle=denied?rd(0.85):yl(0.7);ctx.font='8px '+FAM;
+    ctx.fillText(denied?'BLUE UPLINK JAMMED':'JAM NULLED — OUT OF FOOTPRINT',(jx+bsx)/2-40,(jy+bsy)/2-6);}
+  // red satcom uplinks
+  const[rsx,rsy]=W2S(SATS.red.x,SATS.red.y);
+  if(st.redSat){ctx.setLineDash([3,6]);ctx.lineDashOffset=-performance.now()/50;
+    for(const u of [KJ(),HQ9()]){const[ax,ay]=W2S(u.x,u.y);
+      ctx.strokeStyle=redSatUp()?rd(0.2):rd(0.08);ctx.lineWidth=1;curveLine(ctx,ax,ay,rsx,rsy,-0.1);}
+    ctx.setLineDash([]);}
+  // blue ground jammer vs red sat
+  if(st.gndJam){const g=F.gndjam,[gx,gy]=W2S(g.x,g.y);const kill=!redSatUp();
+    ctx.strokeStyle=cy(kill?0.55:0.25);ctx.lineWidth=kill?1.6:1;
+    ctx.setLineDash([2,3]);ctx.lineDashOffset=-performance.now()/30;curveLine(ctx,gx,gy,rsx,rsy,-0.1);ctx.setLineDash([]);
+    ctx.fillStyle=kill?gn(0.85):yl(0.7);ctx.font='8px '+FAM;
+    ctx.fillText(kill?'RED UPLINK SEVERED':'JAMMING RED UPLINK',(gx+rsx)/2-30,(gy+rsy)/2-6);}
+  drawSat(ctx,bsx,bsy,cy,SATS.blue.nm,m==='SATCOM',denied);
+  drawSat(ctx,rsx,rsy,rd,SATS.red.nm,redSatUp(),!redSatUp()&&st.redSat);
+}
+function drawSat(ctx,x,y,cf,nm,active,jammed){
+  ctx.save();ctx.translate(x,y);ctx.strokeStyle=cf(0.85);ctx.lineWidth=1.2;ctx.strokeRect(-4,-4,8,8);
+  ctx.beginPath();ctx.moveTo(-13,0);ctx.lineTo(-5,0);ctx.moveTo(5,0);ctx.lineTo(13,0);ctx.stroke();
+  ctx.strokeStyle=cf(0.5);ctx.strokeRect(-13,-3,7,6);ctx.strokeRect(6,-3,7,6);
+  if(active){const pu=(performance.now()/500)%1;ctx.strokeStyle=cf(0.5*(1-pu));
+    ctx.beginPath();ctx.arc(0,0,8+pu*10,0,TAU);ctx.stroke();}
+  ctx.restore();
+  ctx.fillStyle=cf(0.9);ctx.font='9px '+FAM;ctx.fillText(nm,x+17,y-2);
+  ctx.fillStyle=jammed?rd(0.9):wt(0.3);ctx.font='8px '+FAM;
+  ctx.fillText(jammed?'× UPLINK DENIED':'GEO · NOT TO SCALE',x+17,y+8);
+}
+function drawBlueNet(ctx){
+  if(blueMode()!=='L16')return;
+  ctx.setLineDash([3,6]);ctx.lineDashOffset=-performance.now()/90;
+  for(let i=0;i<3;i++)for(let j=i+1;j<3;j++){const a=F[NETIDS[i]],b=F[NETIDS[j]];
+    const[ax,ay]=W2S(a.x,a.y),[bx,by]=W2S(b.x,b.y);
+    ctx.strokeStyle=am(0.10+st.netPulse*0.14);ctx.lineWidth=1;curveLine(ctx,ax,ay,bx,by,0.12);}
+  ctx.setLineDash([]);st.netPulse=Math.max(0,st.netPulse-0.02);
+}
+function drawJam(ctx){
+  // red radar noise
+  if(st.eaRadar){const g=jammerGeom(),[jx,jy]=W2S(g.src.x,g.src.y),s=F[st.plat],[sx,sy]=W2S(s.x,s.y);
+    const retune=st.simT<st.jamHoldUntil,toS=Math.atan2(s.y-g.src.y,s.x-g.src.x),reach=dist(g.src.x,g.src.y,s.x,s.y)*VS*1.05;
+    ctx.fillStyle=rd(retune?0.03:0.06+0.02*Math.sin(performance.now()/70));
+    ctx.beginPath();ctx.moveTo(jx,jy);ctx.arc(jx,jy,reach,A(toS)-0.28,A(toS)+0.28);ctx.closePath();ctx.fill();
+    if(g.active){const R=Math.min(maxRange()*VS,Math.hypot(MW,MH)*1.4);
+      ctx.fillStyle=rd(0.055);ctx.beginPath();ctx.moveTo(sx,sy);ctx.arc(sx,sy,R,A(g.brg)-g.strobeHalf,A(g.brg)+g.strobeHalf);ctx.closePath();ctx.fill();
+      ctx.strokeStyle=rd(0.5);ctx.setLineDash([3,4]);ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(sx,sy,maxRange()*VS*0.32,A(g.brg)-g.strobeHalf,A(g.brg)+g.strobeHalf);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=rd(0.75);ctx.font='9px '+FAM;const[lx,ly]=W2S(s.x+Math.cos(g.brg)*maxRange(),s.y+Math.sin(g.brg)*maxRange());
+      ctx.fillText('JAM STROBE '+((g.brg*180/Math.PI+450)%360).toFixed(0).padStart(3,'0')+'°',lx-30,ly);}
+    for(const sp of st.specks){const al=(1-(st.simT-sp.t)/2.2)*0.7;
+      const[x,y]=W2S(F[st.plat].x+Math.cos(sp.a)*sp.r,F[st.plat].y+Math.sin(sp.a)*sp.r);ctx.fillStyle=rd(al);ctx.fillRect(x,y,2,2);}}
+  // blue growler noise vs red radar
+  if(st.growlerRad){const g=F.growler,[gx,gy]=W2S(g.x,g.y);
+    for(const u of [KJ(),HQ9()]){const a=Math.atan2(u.y-g.y,u.x-g.x),reach=dist(g.x,g.y,u.x,u.y)*VS;
+      ctx.fillStyle=cy(0.05+0.02*Math.sin(performance.now()/70));
+      ctx.beginPath();ctx.moveTo(gx,gy);ctx.arc(gx,gy,reach,A(a)-0.16,A(a)+0.16);ctx.closePath();ctx.fill();}}
+}
+function drawBeam(ctx){
+  const s=F[st.plat],[sx,sy]=W2S(s.x,s.y),diag=Math.hypot(MW,MH);
+  const R=Math.min(maxRange()*VS,diag*1.4),bh=beamHalf();
+  for(const h of st.beamHist){const age=st.simT-h.t,al=(1-age/1.35)*0.085;if(al<=0)continue;
+    ctx.fillStyle=cy(al);ctx.beginPath();ctx.moveTo(sx,sy);ctx.arc(sx,sy,R,A(h.a)-0.008,A(h.a)+0.008);ctx.closePath();ctx.fill();}
+  const cwGlow=st.wf==='CW'?0.10+0.05*Math.sin(performance.now()/60):0;
+  ctx.fillStyle=cy(0.16+cwGlow);ctx.beginPath();ctx.moveTo(sx,sy);ctx.arc(sx,sy,R,A(st.beamA)-bh,A(st.beamA)+bh);ctx.closePath();ctx.fill();
+  ctx.strokeStyle=cy(0.5);ctx.lineWidth=1;ctx.beginPath();
+  ctx.moveTo(sx,sy);ctx.lineTo(sx+Math.cos(A(st.beamA)-bh)*R,sy+Math.sin(A(st.beamA)-bh)*R);
+  ctx.moveTo(sx,sy);ctx.lineTo(sx+Math.cos(A(st.beamA)+bh)*R,sy+Math.sin(A(st.beamA)+bh)*R);ctx.stroke();
+  for(const pu of st.pulses){const r=pu.r*VS;if(r>diag*1.5||r<0)continue;const fade=(1-pu.r/maxRange());
+    ctx.strokeStyle=cy(fade*(pu.cw?0.28:0.8));ctx.lineWidth=pu.cw?1:2;
+    ctx.beginPath();ctx.arc(sx,sy,r,A(pu.a)-bh,A(pu.a)+bh);ctx.stroke();}
+}
+function drawPlots(ctx){
+  const s=F[st.plat],[sx,sy]=W2S(s.x,s.y);
+  for(const p of st.plots){const age=st.simT-p.t,al=Math.max(0,1-age/5);
+    if(p.type==='strobe'){const[ex,ey]=W2S(s.x+Math.cos(p.a)*maxRange(),s.y+Math.sin(p.a)*maxRange());
+      ctx.strokeStyle=cy(al*0.55);ctx.lineWidth=1;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();ctx.setLineDash([]);
+      if(age<2.5){const[mx2,my2]=W2S(s.x+Math.cos(p.a)*maxRange()*0.62,s.y+Math.sin(p.a)*maxRange()*0.62);
+        ctx.fillStyle=cy(al*0.9);ctx.font='9px '+FAM;ctx.fillText((p.dop>0?'+':'')+Math.round(p.dop)+' KT',mx2+5,my2);}}
+    else{const[x,y]=W2S(p.x,p.y);ctx.fillStyle=cy(al*0.9);ctx.beginPath();ctx.arc(x,y,2.2,0,TAU);ctx.fill();
+      ctx.fillStyle=cy(al*0.22);ctx.beginPath();ctx.arc(x,y,5.5,0,TAU);ctx.fill();}}
+}
+function drawTruth(ctx){
+  if(!st.truth)return;
+  for(const t of reds){if(t.kind==='ground')continue;const[x,y]=W2S(t.x,t.y);
+    ctx.save();ctx.translate(x,y);ctx.rotate((t.h||0)+cam.rot);
+    ctx.strokeStyle=t.ident==='NEU'?gn(0.25):wt(0.22);ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(5,0);ctx.lineTo(-4,-3.6);ctx.lineTo(-2,0);ctx.lineTo(-4,3.6);ctx.closePath();ctx.stroke();ctx.restore();}
+}
+function drawSites(ctx){
+  // red EW jammer sites
+  for(const key of ['eaL16','eaSat']){const s=SITES[key],[x,y]=W2S(s.x,s.y);
+    const active=(key==='eaL16'&&st.eaL16)||(key==='eaSat'&&st.eaSat);
+    ctx.strokeStyle=rd(active?0.9:0.35);ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.moveTo(x,y-5);ctx.lineTo(x+5,y+4);ctx.lineTo(x-5,y+4);ctx.closePath();ctx.stroke();
+    ctx.fillStyle=rd(active?0.85:0.3);ctx.font='8px '+FAM;ctx.fillText(s.nm,x+8,y+3);
+    if(active){const pu=(performance.now()/600)%1;ctx.strokeStyle=rd(0.5*(1-pu));ctx.beginPath();ctx.arc(x,y,6+pu*14,0,TAU);ctx.stroke();}}
+  if(st.eaL16){const s=SITES.eaL16,[x,y]=W2S(s.x,s.y),a=Math.atan2(150-s.y,120-s.x),reach=dist(s.x,s.y,120,150)*VS*1.15;
+    ctx.fillStyle=rd(0.05+0.02*Math.sin(performance.now()/80));ctx.beginPath();ctx.moveTo(x,y);ctx.arc(x,y,reach,A(a)-0.36,A(a)+0.36);ctx.closePath();ctx.fill();}
+}
+
+/* ── red units ── */
+function drawReds(ctx){
+  const sch=cam.z>=3.4,ss=clamp(cam.z*7,26,110);
+  // SAM ring
+  const hq=HQ9();
+  if(st.redSam){const[hx,hy]=W2S(hq.x,hq.y),rr=hq.lethal*VS;
+    ctx.setLineDash([5,6]);ctx.strokeStyle=rd(hq.engaging?0.55+0.25*Math.sin(performance.now()/120):0.30);
+    ctx.lineWidth=hq.engaging?1.5:1;ctx.beginPath();ctx.arc(hx,hy,rr,0,TAU);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=rd(0.45);ctx.font='8.5px '+FAM;ctx.fillText('HQ-9 MEZ '+hq.lethal+' NM',hx-30,hy-rr-5);}
+  for(const u of reds){
+    const[x,y]=W2S(u.x,u.y);if(x<-160||x>MW+160||y<-160||y>MH+160)continue;
+    const c=classify(u),neu=u.ident==='NEU';
+    const col=neu?gn:rd;
+    if(sch&&(u.id==='HQ9'||u.id==='KJ'||u.id==='EWR'||u.kind==='air'||u.kind==='naval')){
+      if(u.id==='KJ')schemRedAwacs(ctx,u,x,y,ss);
+      else if(u.id==='HQ9')schemSam(ctx,u,x,y,ss);
+      else if(u.id==='EWR')schemEwr(ctx,u,x,y,ss);
+      else if(u.kind==='naval')schemRedShip(ctx,u,x,y,ss);
+      else schemRedFighter(ctx,u,x,y,ss,neu);
+    }else{
+      ctx.save();ctx.translate(x,y);
+      ctx.strokeStyle=col(0.8);ctx.lineWidth=1.2;
+      if(u.kind==='ground'){
+        if(u.id==='HQ9'){ctx.beginPath();ctx.arc(0,0,5,0,TAU);ctx.moveTo(-5,0);ctx.lineTo(5,0);ctx.moveTo(0,-5);ctx.lineTo(0,5);ctx.stroke();}
+        else{ctx.strokeRect(-4,-4,8,8);const ra=performance.now()/700;
+          ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(ra)*6,Math.sin(ra)*6);ctx.stroke();}
+      }else{ctx.rotate((u.h||0)+cam.rot);
+        if(neu){ctx.strokeRect(-4.5,-4.5,9,9);}
+        else{ctx.beginPath();ctx.moveTo(6,0);ctx.lineTo(-4,-4);ctx.lineTo(-2,0);ctx.lineTo(-4,4);ctx.closePath();ctx.stroke();}}
+      ctx.restore();
+    }
+    // ID label from ELINT confidence
+    const sel=st.selThreat===u.id;
+    const idtxt=neu?'CIVIL':c.cls==='hi'?u.platType:c.cls==='md'?c.top+'?':c.sigs.length?'UNK-EMITTER':'';
+    if(idtxt){ctx.fillStyle=sel?yl(0.95):col(0.8);ctx.font='8.5px '+FAM;
+      ctx.fillText(idtxt+(c.sigs.length&&!neu?' '+Math.round(c.conf*100)+'%':''),x+9,y-(sch?ss*0.62:7));}
+    if(sel){const pu=3+1.5*Math.sin(performance.now()/180);ctx.strokeStyle=yl(0.85);ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(x,y,12+pu,0,TAU);ctx.stroke();}
+    if(u.engaging){ctx.fillStyle=rd(0.9);ctx.font='8px '+FAM;ctx.fillText('◆ ENGAGE',x+9,y-(sch?ss*0.62:7)+10);}
+  }
+  // engagement lock line
+  if(hq.engaging){const lead=['strike1','strike2'].map(id=>F[id]).filter(u=>u.active).reduce((a,b)=>!a||b.x>a.x?b:a,null);
+    if(lead){const[hx,hy]=W2S(hq.x,hq.y),[lx,ly]=W2S(lead.x,lead.y);
+      ctx.strokeStyle=rd(0.55+0.3*Math.sin(performance.now()/80));ctx.lineWidth=1;ctx.setLineDash([3,3]);
+      ctx.beginPath();ctx.moveTo(hx,hy);ctx.lineTo(lx,ly);ctx.stroke();ctx.setLineDash([]);}}
+}
+
+/* ── blue units ── */
+function drawFriendlies(ctx){
+  const sch=cam.z>=3.4,ss=clamp(cam.z*7,26,110),m=blueMode();
+  const drawOne=(id)=>{
+    const e=F[id];if(id.startsWith('strike')&&!e.active&&st.scenario!=='ingress')return;
+    const[x,y]=W2S(e.x,e.y);if(x<-200||x>MW+200||y<-200||y>MH+200)return;
+    const isCtl=st.plat===id;
+    if(sch&&['awacs','fighter','ship','growler','gndjam'].includes(id)){
+      if(id==='fighter')schemFighter(ctx,e,x,y,ss,isCtl);
+      else if(id==='awacs')schemAwacs(ctx,e,x,y,ss,isCtl);
+      else if(id==='ship')schemShip(ctx,e,x,y,ss,isCtl);
+      else if(id==='growler')schemGrowler(ctx,e,x,y,ss);
+      else schemGndJam(ctx,e,x,y,ss);
+      if(st.netPulse>0.02&&m!=='DARK'&&NETIDS.includes(id)){ctx.strokeStyle=am(st.netPulse*0.6);
+        ctx.beginPath();ctx.arc(x,y,(1-st.netPulse)*ss*1.6+6,0,TAU);ctx.stroke();}
+      if(cam.z>4.5)schemLabels(ctx,id,x,y,ss,isCtl);
+    }else{
+      ctx.save();ctx.translate(x,y);
+      const isJam=id==='gndjam';
+      ctx.strokeStyle=cy(isCtl?0.9:0.5);ctx.lineWidth=isCtl?1.4:1;
+      if(e.kind==='ship'){ctx.beginPath();ctx.moveTo(-7,3);ctx.lineTo(7,3);ctx.lineTo(4,-3);ctx.lineTo(-4,-3);ctx.closePath();ctx.stroke();}
+      else if(isJam){ctx.strokeStyle=cy(st.gndJam?0.9:0.5);ctx.beginPath();ctx.arc(0,0,5,Math.PI*0.9,Math.PI*2.1);ctx.moveTo(0,0);ctx.lineTo(0,5);ctx.stroke();}
+      else{ctx.rotate(e.h+cam.rot);
+        ctx.beginPath();ctx.moveTo(7,0);ctx.lineTo(-5,-4.5);ctx.lineTo(-3,0);ctx.lineTo(-5,4.5);ctx.closePath();ctx.stroke();
+        if(id==='awacs'){ctx.rotate(-(e.h+cam.rot)+performance.now()/900);
+          ctx.beginPath();ctx.moveTo(-6,0);ctx.lineTo(6,0);ctx.stroke();
+          ctx.strokeStyle=cy(isCtl?0.35:0.2);ctx.beginPath();ctx.arc(0,0,6,0,TAU);ctx.stroke();}}
+      ctx.restore();
+      if(isCtl){ctx.strokeStyle=cy(0.35);ctx.setLineDash([2,3]);ctx.beginPath();ctx.arc(x,y,13,0,TAU);ctx.stroke();ctx.setLineDash([]);}
+    }
+    const off=sch?ss*0.7:8;
+    ctx.fillStyle=isCtl?C.cyan:cy(0.6);ctx.font='9.5px '+FAM;ctx.fillText(e.nm,x+12,y-off);
+    if(id.startsWith('strike')&&e.active){ctx.font='8.5px '+FAM;
+      ctx.fillStyle=st.pkgState==='ENGAGED'?rd(0.9):st.pkgState==='SAFE'?gn(0.7):yl(0.7);
+      ctx.fillText(st.pkgState,x+12,y-off+10);}
+    else if(!isCtl&&NETIDS.includes(id)){ctx.font='8.5px '+FAM;
+      ctx.fillStyle=m==='DARK'?rd(0.85):am(0.5);ctx.fillText(m==='L16'?'RCVG L16':m==='SATCOM'?'RCVG SAT':'ISOLATED',x+12,y-off+10);}
+  };
+  ['ship','awacs','fighter','growler','gndjam','strike1','strike2'].forEach(drawOne);
+}
+
+/* ── blue schematics ── */
+function schemFighter(ctx,e,x,y,ss,isCtl){ctx.save();ctx.translate(x,y);ctx.rotate(e.h+cam.rot);ctx.scale(ss,ss);ctx.lineWidth=1.4/ss;
+  ctx.strokeStyle=cy(isCtl?0.95:0.55);ctx.fillStyle='rgba(13,20,28,.85)';ctx.beginPath();
+  ctx.moveTo(1,0);ctx.lineTo(.55,.09);ctx.lineTo(.28,.14);ctx.lineTo(.05,.52);ctx.lineTo(-.18,.52);ctx.lineTo(-.14,.16);
+  ctx.lineTo(-.52,.34);ctx.lineTo(-.62,.34);ctx.lineTo(-.56,.12);ctx.lineTo(-.68,.08);ctx.lineTo(-.68,-.08);ctx.lineTo(-.56,-.12);
+  ctx.lineTo(-.62,-.34);ctx.lineTo(-.52,-.34);ctx.lineTo(-.14,-.16);ctx.lineTo(-.18,-.52);ctx.lineTo(.05,-.52);ctx.lineTo(.28,-.14);ctx.lineTo(.55,-.09);ctx.closePath();
+  ctx.fill();ctx.stroke();
+  ctx.strokeStyle=cy(0.85);ctx.beginPath();ctx.moveTo(.62,.075);ctx.lineTo(1,0);ctx.lineTo(.62,-.075);ctx.stroke();
+  ctx.setLineDash([.05,.05]);ctx.strokeStyle=cy(0.3);ctx.lineWidth=1/ss;ctx.beginPath();ctx.arc(.9,0,1.15,-0.96,0.96);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=cy(0.35+0.15*Math.sin(performance.now()/90));ctx.beginPath();ctx.arc(-.70,0,.045,0,TAU);ctx.fill();ctx.restore();}
+function schemAwacs(ctx,e,x,y,ss,isCtl){ctx.save();ctx.translate(x,y);ctx.rotate(e.h+cam.rot);ctx.scale(ss,ss);ctx.lineWidth=1.4/ss;
+  ctx.strokeStyle=cy(isCtl?0.95:0.55);ctx.fillStyle='rgba(13,20,28,.85)';
+  ctx.beginPath();ctx.moveTo(.22,.05);ctx.lineTo(-.02,.80);ctx.lineTo(-.16,.80);ctx.lineTo(-.06,.05);ctx.lineTo(-.16,-.80);ctx.lineTo(-.02,-.80);ctx.lineTo(.22,-.05);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.moveTo(-.62,.03);ctx.lineTo(-.78,.30);ctx.lineTo(-.86,.30);ctx.lineTo(-.72,.02);ctx.lineTo(-.86,-.30);ctx.lineTo(-.78,-.30);ctx.lineTo(-.62,-.03);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.ellipse(0,0,.88,.10,0,0,TAU);ctx.fill();ctx.stroke();
+  ctx.strokeStyle=cy(0.4);ctx.beginPath();ctx.moveTo(-.18,.06);ctx.lineTo(-.10,.20);ctx.moveTo(-.18,-.06);ctx.lineTo(-.10,-.20);ctx.stroke();
+  ctx.strokeStyle=cy(isCtl?0.9:0.5);ctx.beginPath();ctx.arc(-.08,0,.42,0,TAU);ctx.stroke();
+  const domeA=isCtl?st.beamA-e.h:performance.now()/900;ctx.strokeStyle=cy(0.9);ctx.lineWidth=2.2/ss;
+  ctx.beginPath();ctx.moveTo(-.08-Math.cos(domeA)*.42,-Math.sin(domeA)*.42);ctx.lineTo(-.08+Math.cos(domeA)*.42,Math.sin(domeA)*.42);ctx.stroke();
+  ctx.fillStyle=am(0.7);ctx.beginPath();ctx.arc(.42,0,.05,0,TAU);ctx.fill();ctx.restore();}
+function schemShip(ctx,e,x,y,ss,isCtl){ctx.save();ctx.translate(x,y);ctx.rotate(e.h+cam.rot);ctx.scale(ss,ss);ctx.lineWidth=1.4/ss;
+  ctx.strokeStyle=cy(isCtl?0.95:0.55);ctx.fillStyle='rgba(13,20,28,.85)';
+  ctx.beginPath();ctx.moveTo(1,0);ctx.lineTo(.66,.16);ctx.lineTo(-.72,.19);ctx.lineTo(-.95,.10);ctx.lineTo(-.95,-.10);ctx.lineTo(-.72,-.19);ctx.lineTo(.66,-.16);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.strokeStyle=cy(0.5);ctx.strokeRect(-.20,-.12,.62,.24);
+  ctx.fillStyle=wt(0.25);for(let i=0;i<3;i++)for(let j=0;j<2;j++)ctx.fillRect(.56+i*.07,-.06+j*.07,.04,.04);
+  const faces=[[.36,.13,0.7],[.36,-.13,-0.7],[-.14,.13,2.44],[-.14,-.13,-2.44]];
+  const beamLocal=isCtl?angN(st.beamA-e.h):null;
+  for(const[fx,fy,nrm]of faces){const hot=isCtl&&Math.abs(angN(beamLocal-nrm))<0.9;
+    ctx.strokeStyle=hot?cy(0.95):cy(0.35);ctx.lineWidth=(hot?3:1.8)/ss;
+    ctx.beginPath();ctx.moveTo(fx-Math.sin(nrm)*.08,fy+Math.cos(nrm)*.08);ctx.lineTo(fx+Math.sin(nrm)*.08,fy-Math.cos(nrm)*.08);ctx.stroke();
+    if(hot){ctx.strokeStyle=cy(0.5);ctx.lineWidth=1/ss;ctx.beginPath();ctx.moveTo(fx,fy);ctx.lineTo(fx+Math.cos(beamLocal)*.4,fy+Math.sin(beamLocal)*.4);ctx.stroke();}}
+  if(isCtl&&st.scan==='STT'&&st.desig){ctx.fillStyle=yl(0.8+0.2*Math.sin(performance.now()/70));
+    ctx.beginPath();ctx.arc(.52,0,.05,0,TAU);ctx.fill();ctx.beginPath();ctx.arc(-.45,0,.05,0,TAU);ctx.fill();}ctx.restore();}
+function schemGrowler(ctx,e,x,y,ss){ctx.save();ctx.translate(x,y);ctx.rotate(e.h+cam.rot);ctx.scale(ss,ss);ctx.lineWidth=1.4/ss;
+  ctx.strokeStyle=cy(0.7);ctx.fillStyle='rgba(13,20,28,.85)';ctx.beginPath();
+  ctx.moveTo(.9,0);ctx.lineTo(.5,.1);ctx.lineTo(.05,.5);ctx.lineTo(-.15,.5);ctx.lineTo(-.12,.14);ctx.lineTo(-.55,.14);ctx.lineTo(-.6,-.14);ctx.lineTo(-.12,-.14);ctx.lineTo(-.15,-.5);ctx.lineTo(.05,-.5);ctx.lineTo(.5,-.1);ctx.closePath();ctx.fill();ctx.stroke();
+  // EA pods
+  ctx.fillStyle=st.growlerTdl||st.growlerRad?am(0.8):cy(0.4);
+  ctx.beginPath();ctx.arc(.1,.3,.05,0,TAU);ctx.arc(.1,-.3,.05,0,TAU);ctx.arc(-.3,0,.05,0,TAU);ctx.fill();ctx.restore();}
+function schemGndJam(ctx,e,x,y,ss){ctx.save();ctx.translate(x,y);ctx.scale(ss,ss);ctx.lineWidth=1.4/ss;
+  ctx.strokeStyle=cy(st.gndJam?0.9:0.55);ctx.fillStyle='rgba(13,20,28,.85)';
+  ctx.strokeRect(-.4,.1,.8,.25);  // shelter
+  // two steerable dishes
+  const tilt=st.gndJam?-0.9:-0.4;
+  for(const dx of [-.22,.22]){ctx.save();ctx.translate(dx,.05);ctx.rotate(tilt);
+    ctx.beginPath();ctx.arc(0,0,.16,-1.2,1.2);ctx.stroke();ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(.16,0);ctx.stroke();ctx.restore();}
+  if(st.gndJam){ctx.strokeStyle=cy(0.4);ctx.lineWidth=1/ss;
+    for(let i=0;i<3;i++){const pu=((performance.now()/400)+i/3)%1;ctx.globalAlpha=1-pu;
+      ctx.beginPath();ctx.arc(0,.05,.2+pu*.6,-1.4,1.4);ctx.stroke();}ctx.globalAlpha=1;}ctx.restore();}
+function schemLabels(ctx,id,x,y,ss,isCtl){ctx.font='8px '+FAM;ctx.fillStyle=wt(0.4);const ly=y+ss*0.75;
+  const t={fighter:['NOSE AESA · GIMBAL ±55°','JTIDS / IFF FIN ANTENNA'],
+    awacs:['ROTODOME · 6 RPM MECH SCAN','IFF 1030/1090 · SATCOM SPINE'],
+    ship:['SPY-1 · 4 FIXED FACES · E-SCAN',isCtl&&st.scan==='STT'&&st.desig?'SPG-62 ILLUMINATOR — CW X':'VLS FWD / AFT'],
+    growler:['AN/ALQ-99 & NGJ EA PODS',st.growlerTdl?'JAMMING RED DATALINK':'STAND-IN JAMMER'],
+    gndjam:['GROUND EW · STEERABLE DISHES',st.gndJam?'BARRAGE VS RED SATCOM UPLINK':'ALL-BAND CAPABLE']}[id];
+  if(t){ctx.fillText(t[0],x+12,ly);ctx.fillText(t[1],x+12,ly+10);}}
+
+/* ── red schematics ── */
+function schemRedAwacs(ctx,e,x,y,ss){ctx.save();ctx.translate(x,y);ctx.rotate((e.h||0)+cam.rot);ctx.scale(ss,ss);ctx.lineWidth=1.4/ss;
+  ctx.strokeStyle=rd(0.8);ctx.fillStyle='rgba(24,10,12,.85)';
+  ctx.beginPath();ctx.moveTo(.2,.05);ctx.lineTo(-.02,.7);ctx.lineTo(-.14,.7);ctx.lineTo(-.06,.05);ctx.lineTo(-.14,-.7);ctx.lineTo(-.02,-.7);ctx.lineTo(.2,-.05);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.ellipse(0,0,.8,.09,0,0,TAU);ctx.fill();ctx.stroke();
+  // fixed dorsal AESA balance-beam
+  ctx.strokeStyle=rd(0.9);ctx.lineWidth=2.4/ss;ctx.beginPath();ctx.moveTo(-.35,-.02);ctx.lineTo(.15,-.02);ctx.stroke();
+  const sweep=performance.now()/700;ctx.strokeStyle=rd(0.5);ctx.lineWidth=1/ss;
+  ctx.beginPath();ctx.moveTo(-.1,0);ctx.lineTo(-.1+Math.cos(sweep)*.5,Math.sin(sweep)*.5);ctx.stroke();ctx.restore();}
+function schemRedFighter(ctx,e,x,y,ss,neu){ctx.save();ctx.translate(x,y);ctx.rotate((e.h||0)+cam.rot);ctx.scale(ss,ss);ctx.lineWidth=1.4/ss;
+  ctx.strokeStyle=neu?gn(0.7):rd(0.8);ctx.fillStyle=neu?'rgba(12,24,16,.85)':'rgba(24,10,12,.85)';
+  ctx.beginPath();ctx.moveTo(.9,0);ctx.lineTo(.5,.09);ctx.lineTo(.06,.46);ctx.lineTo(-.16,.46);ctx.lineTo(-.12,.14);ctx.lineTo(-.58,.16);ctx.lineTo(-.58,-.16);ctx.lineTo(-.12,-.14);ctx.lineTo(-.16,-.46);ctx.lineTo(.06,-.46);ctx.lineTo(.5,-.09);ctx.closePath();ctx.fill();ctx.stroke();
+  if(!neu){ctx.strokeStyle=rd(0.8);ctx.beginPath();ctx.moveTo(.55,.06);ctx.lineTo(.9,0);ctx.lineTo(.55,-.06);ctx.stroke();}ctx.restore();}
+function schemSam(ctx,e,x,y,ss){ctx.save();ctx.translate(x,y);ctx.scale(ss,ss);ctx.lineWidth=1.4/ss;
+  ctx.strokeStyle=rd(0.85);ctx.fillStyle='rgba(24,10,12,.85)';
+  // TEL launcher box + raised tubes
+  ctx.strokeRect(-.32,.05,.5,.22);ctx.strokeStyle=rd(0.6);
+  for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(-.26+i*.12,.05);ctx.lineTo(-.16+i*.12,-.4);ctx.stroke();}
+  // HT-233 phased array (rotating search)
+  const ra=e.engaging?st.beamA:performance.now()/650;
+  ctx.save();ctx.translate(.35,.16);ctx.rotate(ra);
+  ctx.strokeStyle=e.engaging?rd(0.95):rd(0.7);ctx.lineWidth=(e.engaging?2.6:1.8)/ss;
+  ctx.beginPath();ctx.moveTo(0,-.1);ctx.lineTo(0,.1);ctx.stroke();
+  ctx.strokeStyle=rd(0.4);ctx.lineWidth=1/ss;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(.5,0);ctx.stroke();ctx.restore();
+  ctx.restore();}
+function schemEwr(ctx,e,x,y,ss){ctx.save();ctx.translate(x,y);ctx.scale(ss,ss);ctx.lineWidth=1.6/ss;
+  ctx.strokeStyle=rd(0.8);const ra=performance.now()/900;
+  ctx.save();ctx.rotate(ra);ctx.beginPath();ctx.arc(0,0,.4,-1.3,1.3);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,-.4);ctx.lineTo(0,.4);ctx.stroke();ctx.restore();
+  ctx.strokeStyle=rd(0.4);ctx.strokeRect(-.12,.3,.24,.16);ctx.restore();}
+function schemRedShip(ctx,e,x,y,ss){ctx.save();ctx.translate(x,y);ctx.rotate((e.h||0)+cam.rot);ctx.scale(ss,ss);ctx.lineWidth=1.4/ss;
+  ctx.strokeStyle=rd(0.8);ctx.fillStyle='rgba(24,10,12,.85)';
+  ctx.beginPath();ctx.moveTo(.95,0);ctx.lineTo(.6,.15);ctx.lineTo(-.7,.17);ctx.lineTo(-.9,.09);ctx.lineTo(-.9,-.09);ctx.lineTo(-.7,-.17);ctx.lineTo(.6,-.15);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.strokeStyle=rd(0.55);ctx.strokeRect(-.15,-.11,.5,.22);
+  // Type-346 fixed faces
+  for(const s of [[.34,.11],[.34,-.11]]){ctx.beginPath();ctx.moveTo(s[0]-.03,s[1]-.06);ctx.lineTo(s[0]+.03,s[1]+.06);ctx.stroke();}ctx.restore();}
+
+/* ── tracks / missiles / packets / iff / hud ── */
+function symColorA(id,a){return id==='HOS'?rd(a):id==='NEU'?gn(a):yl(a);}
+function drawTracks(ctx){
+  const s=F[st.plat],m=blueMode();
+  for(const tk of st.tracks){const age=st.simT-tk.tUpd;
+    const px=tk.x+tk.vx*age,py=tk.y+tk.vy*age;const[x,y]=W2S(px,py);
+    if(x<-60||x>MW+60||y<-60||y>MH+60)continue;
+    const stale=age>plat().scanT*2.2+2,al=stale?clamp(1-(age-6)/16,0.15,0.55):1;
+    const col=symColorA(tk.ident,al);
+    ctx.save();ctx.translate(x,y);ctx.strokeStyle=col;ctx.lineWidth=tk.firm?1.5:1;
+    if(stale)ctx.setLineDash([3,3]);
+    if(tk.ident==='HOS'){ctx.beginPath();ctx.moveTo(0,-6);ctx.lineTo(6,0);ctx.lineTo(0,6);ctx.lineTo(-6,0);ctx.closePath();ctx.stroke();}
+    else if(tk.ident==='NEU'){ctx.strokeRect(-5,-5,10,10);}
+    else{ctx.beginPath();ctx.arc(0,0,5.5,Math.PI,0);ctx.stroke();ctx.beginPath();ctx.moveTo(-5.5,0);ctx.lineTo(-5.5,3);ctx.moveTo(5.5,0);ctx.lineTo(5.5,3);ctx.stroke();}
+    ctx.setLineDash([]);ctx.restore();
+    if(tk.firm){const sp=Math.hypot(tk.vx,tk.vy);if(sp>0.1){const ux=tk.vx/sp,uy=tk.vy/sp,len=clamp(sp*6,8,26);
+      const[e1x,e1y]=W2S(px+ux*7/VS,py+uy*7/VS),[e2x,e2y]=W2S(px+ux*len/VS,py+uy*len/VS);
+      ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(e1x,e1y);ctx.lineTo(e2x,e2y);ctx.stroke();}}
+    const rngNm=dist(s.x,s.y,px,py);
+    const cross=clamp(rngNm*Math.sin(beamHalf())*0.9,1.5,44)*VS,along=clamp(band().res*(st.scan==='STT'&&st.desig===tk?0.5:1.4),1,20)*VS;
+    ctx.save();ctx.translate(x,y);ctx.rotate(A(Math.atan2(py-s.y,px-s.x)));
+    ctx.strokeStyle=symColorA(tk.ident,al*0.3);ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(0,0,along+4,cross+4,0,0,TAU);ctx.stroke();ctx.restore();
+    ctx.fillStyle=symColorA(tk.ident,al*0.95);ctx.font='9px '+FAM;
+    let lab=(tk.firm?'':'T-')+tk.id;if(tk.dop!=null&&tk.firm)lab+=' · '+(tk.dop>0?'+':'')+Math.round(tk.dop)+'KT';
+    ctx.fillText(lab,x+10,y-9);
+    if(stale){ctx.fillStyle=wt(0.4);ctx.fillText('STALE '+age.toFixed(0)+'s',x+10,y+1);}
+    if(m!=='DARK'&&tk.firm&&!stale){ctx.fillStyle=am(0.55);ctx.fillText(m==='L16'?'L16':'SAT',x+10,y+11);}
+    if(st.desig===tk){const pu=3+1.5*Math.sin(performance.now()/180);ctx.strokeStyle=yl(0.85);ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(x,y,11+pu,0,TAU);ctx.stroke();ctx.fillStyle=yl(0.9);ctx.fillText('DESIG',x-38,y-9);}}
+}
+function drawMissiles(ctx){for(const mo of st.missiles){const[x,y]=W2S(mo.x,mo.y);
+  ctx.fillStyle=rd(0.95);ctx.beginPath();ctx.arc(x,y,2,0,TAU);ctx.fill();
+  ctx.strokeStyle=rd(0.3);ctx.beginPath();ctx.arc(x,y,4+2*Math.sin(performance.now()/60),0,TAU);ctx.stroke();}}
+function drawPackets(ctx){const now=performance.now()/1000;st.packets=st.packets.filter(pk=>now-pk.t0<pk.dur);
+  for(const pk of st.packets){const dst=F[pk.to],u=(now-pk.t0)/pk.dur;let x,y;
+    if(pk.via){const sat=SATS.blue;let ax,ay,bx,by,t;
+      if(u<0.5){ax=pk.fx;ay=pk.fy;bx=sat.x;by=sat.y;t=u*2;}else{ax=sat.x;ay=sat.y;bx=dst.x;by=dst.y;t=(u-0.5)*2;}
+      const[sx,sy]=W2S(ax,ay),[ex,ey]=W2S(bx,by),mx=(sx+ex)/2+(ey-sy)*-0.12,my=(sy+ey)/2-(ex-sx)*-0.12;
+      x=lerp(lerp(sx,mx,t),lerp(mx,ex,t),t);y=lerp(lerp(sy,my,t),lerp(my,ey,t),t);}
+    else{const[sx,sy]=W2S(pk.fx,pk.fy),[ex,ey]=W2S(dst.x,dst.y),mx=(sx+ex)/2+(ey-sy)*0.12,my=(sy+ey)/2-(ex-sx)*0.12;
+      x=lerp(lerp(sx,mx,u),lerp(mx,ex,u),u);y=lerp(lerp(sy,my,u),lerp(my,ey,u),u);}
+    ctx.fillStyle=am(pk.idle?0.4:0.95);ctx.fillRect(x-1.5,y-1.5,3,3);
+    if(!pk.idle){ctx.fillStyle=am(0.25);ctx.fillRect(x-4,y-4,8,8);}}}
+function drawIffs(ctx){st.iffs=st.iffs.filter(z=>st.simT-z.t0<z.dur+0.1);
+  for(const z of st.iffs){if(st.simT<z.t0)continue;const u=clamp((st.simT-z.t0)/z.dur,0,1);
+    const[ax,ay]=W2S(z.fx,z.fy),[bx,by]=W2S(z.tx,z.ty),col=z.reply?gn:cy,n=9,prog=Math.ceil(n*Math.min(u*1.5,1));
+    ctx.strokeStyle=col(0.85*(1-u*0.7));ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(ax,ay);
+    const dx=(bx-ax)/n,dy=(by-ay)/n,L=Math.hypot(bx-ax,by-ay)||1,nx=-(by-ay)/L,ny=(bx-ax)/L;
+    for(let i=1;i<=prog;i++){const amp=(i===n?0:(i%2?6:-6));ctx.lineTo(ax+dx*i+nx*amp,ay+dy*i+ny*amp);}ctx.stroke();
+    if(u<0.55){ctx.fillStyle=col(0.9);ctx.font='8.5px '+FAM;ctx.fillText(z.reply?'1090 REPLY':'1030 INTERROGATE',(ax+bx)/2+6,(ay+by)/2-4);}}}
+function drawHud(ctx){
+  ctx.fillStyle=cy(0.75);ctx.font='10px '+FAM;
+  ctx.fillText(`SENSOR ${plat().nm} · ${band().id}-BAND · ${wf().id} · ${st.scan}${st.paused?' · FROZEN':''}`,16,26);
+  ctx.fillStyle=wt(0.3);ctx.font='9px '+FAM;
+  const vw=cam.follow?`INSPECT ${F[cam.follow].nm}${cam.hdgUp?' · HDG-UP':''}`:'THEATER';
+  ctx.fillText(`SIM ×${TSCALE} · ${vw} · Z${cam.z.toFixed(1)} · ESM ${reds.reduce((a,u)=>a+classify(u).sigs.length,0)} INTERCEPTS`,16,40);
+  if(st.scan==='STT'&&!st.desig){ctx.fillStyle=yl(0.85);ctx.font='10px '+FAM;ctx.fillText('STT — DESIGNATE A TRACK.',16,56);}
+  if(blueMode()==='DARK'){ctx.fillStyle=rd(0.7+0.2*Math.sin(performance.now()/200));ctx.font='10px '+FAM;
+    ctx.fillText('▌ BLUE COMMS DARK — L16 + SATCOM UPLINK JAMMED. TRY THE Ka SPOT BEAM.',16,MH-16);}
+  else if(st.pkgState==='ENGAGED'){ctx.fillStyle=rd(0.7+0.2*Math.sin(performance.now()/160));ctx.font='10px '+FAM;
+    ctx.fillText('▌ PACKAGE ENGAGED — BREAK THE RED KILL CHAIN: JAM TAC DATALINK + RED SATCOM.',16,MH-16);}
+  else if(st.pkgSurvivable){ctx.fillStyle=gn(0.75);ctx.font='10px '+FAM;
+    ctx.fillText('▌ IN THE MEZ BUT SURVIVABLE — RED HOLDS A TRACK BUT THE SEVERED DATALINK DENIES THE SHOT.',16,MH-16);}
+  else if(st.pkgState==='SAFE'){ctx.fillStyle=gn(0.7);ctx.font='10px '+FAM;
+    ctx.fillText('▌ PACKAGE SAFE — RED HAS NO TARGETING TRACK. INGRESS CLEAR.',16,MH-16);}
+}
+
+/* ═══════ spectrum ═══════ */
+const SEGS=[{n:'UHF',f0:0.2,f1:1},{n:'L',f0:1,f1:2},{n:'S',f0:2,f1:4},{n:'C',f0:4,f1:8},
+ {n:'X',f0:8,f1:12},{n:'Ku',f0:12,f1:18},{n:'K',f0:18,f1:27},{n:'Ka',f0:27,f1:40}];
+const FMIN=0.2,FMAX=42,SPADL=14,SPADR=14;
+const xOf=f=>SPADL+(Math.log10(f)-Math.log10(FMIN))/(Math.log10(FMAX)-Math.log10(FMIN))*(SW-SPADL-SPADR);
+const fOf=x=>Math.pow(10,Math.log10(FMIN)+(x-SPADL)/(SW-SPADL-SPADR)*(Math.log10(FMAX)-Math.log10(FMIN)));
+function drawSpec(){
+  const ctx=sctx;ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,SW,SH);const base=SH-30;
+  for(let i=0;i<SEGS.length;i++){const sg=SEGS[i],x0=xOf(sg.f0),x1=xOf(sg.f1),act=sg.n===st.band;
+    ctx.fillStyle=act?cy(0.10):(i%2?wt(0.025):wt(0.045));ctx.fillRect(x0,14,x1-x0,base-14);
+    ctx.strokeStyle=act?cy(0.55):wt(0.09);ctx.strokeRect(x0+.5,14.5,x1-x0-1,base-15);
+    ctx.fillStyle=act?C.cyan:(BANDS.some(b=>b.id===sg.n)?wt(0.6):wt(0.3));ctx.font=(act?'600 ':'')+'10px '+FAM;
+    ctx.fillText(sg.n,(x0+x1)/2-ctx.measureText(sg.n).width/2,base-6);}
+  ctx.strokeStyle=wt(0.25);ctx.beginPath();ctx.moveTo(SPADL,base);ctx.lineTo(SW-SPADR,base);ctx.stroke();
+  ctx.fillStyle=wt(0.4);ctx.font='8.5px '+FAM;
+  for(const f of [0.3,1,3,10,30]){const x=xOf(f);ctx.fillRect(x,base,1,3);ctx.fillText(f+' GHz',x-10,base+13);}
+  ctx.fillStyle=wt(0.22);for(const[l0,l1]of [[1,'λ 30cm'],[3,'10cm'],[10,'3cm'],[30,'1cm']])ctx.fillText(l1,xOf(l0)-10,base+24);
+  const m=blueMode();
+  block(ctx,0.24,0.32,'UHF SAT',am,st.satBand==='UHF'?(m==='SATCOM'?0.35:0.16):0.05,base);
+  block(ctx,0.96,1.215,'LINK 16',am,m==='L16'?(0.25+st.netPulse*0.6):0.05,base);
+  block(ctx,7.25,8.4,'SAT X',am,st.satBand==='X'?(m==='SATCOM'?0.35:0.16):0.05,base);
+  block(ctx,29,31,'Ka SAT',am,st.satBand==='Ka'?(m==='SATCOM'?0.35:0.16):0.05,base);
+  block(ctx,0.24,0.4,'RED TDL',rd,redTdlUp()?0.2:0.05,base);   // red datalink UHF
+  const gx=xOf(1.575);ctx.strokeStyle=wt(0.2);ctx.setLineDash([2,3]);ctx.beginPath();ctx.moveTo(gx,18);ctx.lineTo(gx,base);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=wt(0.3);ctx.font='8px '+FAM;ctx.fillText('GPS',gx+3,26);
+  st.iffPulse=Math.max(0,(st.iffPulse||0)-0.015);
+  for(const f of [1.03,1.09]){const x=xOf(f);ctx.strokeStyle=cy(0.15+st.iffPulse*0.7);ctx.beginPath();ctx.moveTo(x,base);ctx.lineTo(x,base-30);ctx.stroke();}
+  ctx.fillStyle=cy(0.2+st.iffPulse*0.7);ctx.font='8px '+FAM;ctx.fillText('IFF',xOf(1.06)-6,base-32);
+  // humps
+  const b=band(),cx0=xOf(b.f);
+  hump(ctx,cx0,base,26,st.wf==='CW'?1:0.7+0.3*Math.abs(Math.sin(performance.now()/(prf().vis*1000))),cy,'RADAR',1);
+  if(m==='SATCOM')hump(ctx,xOf(satband().f),base,18,0.9,cy,'BLUE UPLINK',1.1);
+  // red ESM-detected emitters (unique bands lit faintly)
+  const detBands=new Set();reds.forEach(u=>Object.keys(u.det).filter(s=>st.simT-u.seen[s]<6).forEach(s=>detBands.add(SIGLIB[s].band)));
+  for(const bd of BANDS)if(detBands.has(bd.id)){ctx.strokeStyle=rd(0.3);ctx.setLineDash([1,3]);
+    ctx.beginPath();ctx.moveTo(xOf(bd.f),base);ctx.lineTo(xOf(bd.f),base-14);ctx.stroke();ctx.setLineDash([]);}
+  if(st.eaRadar){const retune=st.simT<st.jamHoldUntil,prog=retune?clamp(1-(st.jamHoldUntil-st.simT)/4,0,1):1;
+    hump(ctx,lerp(cx0-90,cx0,prog),base,20,retune?0.5:0.9,rd,retune?'JAMMER (RETUNING)':'RED RADAR JAM',1.9);}
+  if(st.eaL16)hump(ctx,xOf(1.09),base,17,0.85,rd,'L16 BARRAGE',1.5);
+  if(st.eaSat){const nulled=!blueSatDenied();hump(ctx,xOf(satband().f),base,nulled?8:16,nulled?0.4:0.85,rd,nulled?'UPLINK JAM (NULLED)':'RED UPLINK JAM',1.6);}
+  if(st.growlerTdl)hump(ctx,xOf(0.3),base,15,0.85,gn,'EA → RED TDL',1.6);
+  if(st.gndJam)hump(ctx,xOf(BANDS.find(x=>x.id===st.jamBand).f),base,15,0.8,gn,'GND JAM',1.4);
+}
+function block(ctx,f0,f1,lab,cf,a,base){const x0=xOf(f0),x1=xOf(f1);
+  ctx.fillStyle=cf(a);ctx.fillRect(x0,20,x1-x0,base-24);
+  ctx.strokeStyle=cf(Math.min(a*2.2,0.75));ctx.strokeRect(x0+.5,20.5,x1-x0-1,base-25);
+  ctx.fillStyle=cf(Math.min(a*2.5,0.9));ctx.font='8px '+FAM;ctx.fillText(lab,x0-2,15);}
+function hump(ctx,cx,base,h,inten,cf,label,widthMul){const w=(widthMul||1)*26;
+  ctx.beginPath();ctx.moveTo(cx-w*2,base);
+  for(let i=-40;i<=40;i++){const x=cx+i*w/20,y=base-h*inten*Math.exp(-(i*i)/320)*(1+(Math.random()-.5)*0.18);ctx.lineTo(x,y);}
+  ctx.lineTo(cx+w*2,base);ctx.strokeStyle=cf(0.8);ctx.lineWidth=1;ctx.stroke();ctx.fillStyle=cf(0.13);ctx.fill();
+  ctx.fillStyle=cf(0.9);ctx.font='8.5px '+FAM;ctx.fillText(label,cx-ctx.measureText(label).width/2,base-h-6);}
+spec.addEventListener('mousemove',e=>{const r=spec.getBoundingClientRect(),x=e.clientX-r.left,f=fOf(x),tip=$('#specTip');
+  if(f<FMIN||f>FMAX){tip.style.display='none';return;}const sg=SEGS.find(s=>f>=s.f0&&f<s.f1);
+  tip.style.display='block';tip.style.left=x+'px';
+  tip.textContent=`${f<1?(f*1000).toFixed(0)+' MHz':f.toFixed(1)+' GHz'} · λ ${(29.98/f).toFixed(1)} cm${sg?' · '+sg.n:''}`;});
+spec.addEventListener('mouseleave',()=>$('#specTip').style.display='none');
+spec.addEventListener('click',e=>{const r=spec.getBoundingClientRect(),f=fOf(e.clientX-r.left);
+  const bd=BANDS.find(b=>f>=b.f0&&f<b.f1);if(bd)retune(bd.id);});
+
+/* ═══════ loop ═══════ */
+let lastT=performance.now(),roT=0;
+function frame(now){let dt=clamp((now-lastT)/1000,0,0.05);lastT=now;
+  updateCam(dt);
+  if(!st.paused){st.simT+=dt;moveAll(dt);steerBeam(dt);firePulses(dt);detect(dt);ageTracks();
+    elint(dt);killChain(dt);idlePackets();watchComms();}
+  drawMap();drawSpec();
+  roT+=dt;if(roT>0.25){roT=0;readouts();threatPanel();desigPanel();
+    const pk=$('#chipPkg');if(st.scenario==='ingress'){pk.textContent='PKG: '+st.pkgState;
+      pk.style.color=st.pkgState==='ENGAGED'?C.red:st.pkgState==='TRACKED'?C.yellow:st.pkgState==='SAFE'?C.green:C.dim;}}
+  requestAnimationFrame(frame);
+}
+setInterval(()=>{const d=new Date(),z=n=>String(n).padStart(2,'0');
+  $('#zulu').textContent=`${z(d.getUTCHours())}:${z(d.getUTCMinutes())}:${z(d.getUTCSeconds())}Z`;},500);
+
+/* ═══════ boot ═══════ */
+FAM=getComputedStyle(document.body).fontFamily;
+buildControls();
+setScenario('isr');
+syncView();
+resize();
+requestAnimationFrame(t=>{lastT=t;requestAnimationFrame(frame);});
+log('EMSO CONSOLE v3 — WESTPAC IADS SCENARIO','hot');
+log('ESM PASSIVE COLLECTION ONLINE','net');
+log('WGS-11 X-BAND TRUNK ESTABLISHED','net');
+</script>
