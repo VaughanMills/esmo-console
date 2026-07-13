@@ -1,9 +1,0 @@
-# OS / editor cruft
-.DS_Store
-Thumbs.db
-*.log
-.vscode/
-.idea/
-
-# Node (only if you add the optional local server)
-node_modules/
